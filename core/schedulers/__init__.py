@@ -86,11 +86,11 @@ class SchedulerRegistry:
         return entry["params"]
     
     @classmethod
-    def get_available_schedulers(cls) -> List[str]:
+    def get_available_schedulers(cls) -> Tuple[str, ...]:
         """
-        Returns a list of available scheduler names in their original case.
+        Returns a tuple of available scheduler names in their original case.
         
         Returns:
-            List[str]: List of available scheduler names.
+            Tuple[str]: Tuple of available scheduler names.
         """
-        return list(cls.__SCHEDULERS.keys())
+        return tuple(cls.__SCHEDULERS.keys())

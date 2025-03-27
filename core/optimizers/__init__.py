@@ -82,11 +82,11 @@ class OptimizerRegistry:
         return entry["params"]
     
     @classmethod
-    def get_available_optimizers(cls) -> List[str]:
+    def get_available_optimizers(cls) -> Tuple[str, ...]:
         """
-        Returns a list of available optimizer names in their original case.
+        Returns a tuple of available optimizer names in their original case.
         
         Returns:
-            List[str]: List of available optimizer names.
+            Tuple[str]: Tuple of available optimizer names.
         """
-        return list(cls.__OPTIMIZERS.keys())
+        return tuple(cls.__OPTIMIZERS.keys())

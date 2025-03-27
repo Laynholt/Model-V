@@ -87,11 +87,11 @@ class CriterionRegistry:
         return entry["params"]
     
     @classmethod
-    def get_available_criterions(cls) -> List[str]:
+    def get_available_criterions(cls) -> Tuple[str, ...]:
         """
-        Returns a list of available loss function names in their original case.
+        Returns a tuple of available loss function names in their original case.
         
         Returns:
-            List[str]: List of available loss function names.
+            Tuple[str]: Tuple of available loss function names.
         """
-        return list(cls.__CRITERIONS.keys())
+        return tuple(cls.__CRITERIONS.keys())

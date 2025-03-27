@@ -1,4 +1,3 @@
-import torch
 from typing import Any, Dict, Tuple
 from pydantic import BaseModel, ConfigDict
 

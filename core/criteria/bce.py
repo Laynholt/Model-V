@@ -1,5 +1,5 @@
 from .base import *
-from typing import Literal
+from typing import List, Literal, Union
 from pydantic import BaseModel, ConfigDict
 
 
@@ -7,11 +7,11 @@ class BCELossParams(BaseModel):
     """
     Class for handling parameters for both `nn.BCELoss` and `nn.BCEWithLogitsLoss`.
     """
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(frozen=True)
     
-    weight: Optional[torch.Tensor] = None  # Sample weights
+    weight: Optional[List[Union[int, float]]] = None  # Sample weights
     reduction: Literal["none", "mean", "sum"] = "mean"  # Reduction method
-    pos_weight: Optional[torch.Tensor] = None  # Used only for BCEWithLogitsLoss
+    pos_weight: Optional[List[Union[int, float]]] = None  # Used only for BCEWithLogitsLoss
 
     def asdict(self, with_logits: bool = False) -> Dict[str, Any]:
         """
@@ -30,6 +30,15 @@ class BCELossParams(BaseModel):
         loss_kwargs = self.model_dump()
         if not with_logits:
             loss_kwargs.pop("pos_weight", None)  # Remove pos_weight if using BCELoss
+        
+        weight = loss_kwargs.get("weight")
+        pos_weight = loss_kwargs.get("pos_weight")
+        
+        if weight is not None:
+            loss_kwargs["weight"] = torch.Tensor(weight)
+            
+        if pos_weight is not None:
+            loss_kwargs["pos_weight"] = torch.Tensor(pos_weight) 
         
         return {k: v for k, v in loss_kwargs.items() if v is not None}  # Remove None values
 

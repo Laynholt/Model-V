@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel
-from typing import Any, Dict, Type, Union, List
+from typing import Any, Dict, Tuple, Type, Union, List
 
 from config.config import Config
 from config.dataset_config import DatasetConfig
@@ -22,7 +22,7 @@ def instantiate_params(param: Any) -> Union[BaseModel, List[BaseModel]]:
     else:
         return param()
 
-def prompt_choice(prompt_message: str, options: List[str]) -> str:
+def prompt_choice(prompt_message: str, options: Tuple[str, ...]) -> str:
     """
     Prompt the user with a list of options and return the selected option.
     """

@@ -1,5 +1,5 @@
 from .base import *
-from typing import Literal
+from typing import List, Literal, Union
 from pydantic import BaseModel, ConfigDict
 
 
@@ -7,9 +7,9 @@ class CrossEntropyLossParams(BaseModel):
     """
     Class for handling parameters for `nn.CrossEntropyLoss`.
     """
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(frozen=True)
     
-    weight: Optional[torch.Tensor] = None
+    weight: Optional[List[Union[int, float]]] = None
     ignore_index: int = -100
     reduction: Literal["none", "mean", "sum"] = "mean"
     label_smoothing: float = 0.0
@@ -22,6 +22,11 @@ class CrossEntropyLossParams(BaseModel):
             Dict[str, Any]: Dictionary of parameters for nn.CrossEntropyLoss.
         """
         loss_kwargs = self.model_dump()
+        
+        weight = loss_kwargs.get("weight")
+        if weight is not None:
+            loss_kwargs["weight"] = torch.Tensor(weight)
+        
         return {k: v for k, v in loss_kwargs.items() if v is not None}  # Remove None values
     
 

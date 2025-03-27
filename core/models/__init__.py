@@ -75,11 +75,11 @@ class ModelRegistry:
         return entry["params"]
     
     @classmethod
-    def get_available_models(cls) -> List[str]:
+    def get_available_models(cls) -> Tuple[str, ...]:
         """
-        Returns a list of available model names in their original case.
+        Returns a tuple of available model names in their original case.
         
         Returns:
-            List[str]: List of available model names.
+            Tuple[str]: Tuple of available model names.
         """
-        return list(cls.__MODELS.keys())
+        return tuple(cls.__MODELS.keys())
