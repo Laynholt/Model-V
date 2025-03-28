@@ -98,7 +98,7 @@ def main():
         base_filename = f"{chosen_model}_{chosen_criterion}_{chosen_optimizer}_{chosen_scheduler}"
 
     # Determine the output directory relative to this script.
-    base_dir = os.path.join(script_path, "config/jsons", "train" if is_training else "predict")
+    base_dir = os.path.join(script_path, "config/templates", "train" if is_training else "predict")
     os.makedirs(base_dir, exist_ok=True)
 
     filename = f"{base_filename}.json"

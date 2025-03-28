@@ -1,5 +1,5 @@
 from .models import ModelRegistry
-from .criteria import CriterionRegistry
+from .losses import CriterionRegistry
 from .optimizers import OptimizerRegistry
 from .schedulers import SchedulerRegistry
 
