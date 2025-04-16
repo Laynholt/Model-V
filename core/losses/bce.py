@@ -9,27 +9,26 @@ class BCELossParams(BaseModel):
     """
     model_config = ConfigDict(frozen=True)
     
+    with_logits: bool = False
+    
     weight: Optional[List[Union[int, float]]] = None  # Sample weights
     reduction: Literal["none", "mean", "sum"] = "mean"  # Reduction method
     pos_weight: Optional[List[Union[int, float]]] = None  # Used only for BCEWithLogitsLoss
 
-    def asdict(self, with_logits: bool = False) -> Dict[str, Any]:
+    def asdict(self) -> Dict[str, Any]:
         """
         Returns a dictionary of valid parameters for `nn.BCEWithLogitsLoss` and `nn.BCELoss`.
 
         - If `with_logits=False`, `pos_weight` is **removed** to avoid errors.
         - Ensures only the valid parameters are passed based on the loss function.
 
-        Args:
-            with_logits (bool): If `True`, includes `pos_weight` (for `nn.BCEWithLogitsLoss`).
-                               If `False`, removes `pos_weight` (for `nn.BCELoss`).
-
         Returns:
             Dict[str, Any]: Filtered dictionary of parameters.
         """
         loss_kwargs = self.model_dump()
-        if not with_logits:
+        if not self.with_logits:
             loss_kwargs.pop("pos_weight", None)  # Remove pos_weight if using BCELoss
+            loss_kwargs.pop("with_logits", None)
         
         weight = loss_kwargs.get("weight")
         pos_weight = loss_kwargs.get("pos_weight")
@@ -48,15 +47,16 @@ class BCELoss(BaseLoss):
     Custom loss function wrapper for `nn.BCELoss and nn.BCEWithLogitsLoss` with tracking of loss metrics.
     """
 
-    def __init__(self, bce_params: Optional[BCELossParams] = None, with_logits: bool = False):
+    def __init__(self, params: Optional[BCELossParams] = None):
         """
         Initializes the loss function with optional BCELoss parameters.
 
         Args:
-            bce_params (Optional[Dict[str, Any]]): Parameters for nn.BCELoss (default: None).
+            params (Optional[Dict[str, Any]]): Parameters for nn.BCELoss (default: None).
         """
-        super().__init__()
-        _bce_params = bce_params.asdict(with_logits=with_logits) if bce_params is not None else {}
+        super().__init__(params=params)
+        with_logits = params.with_logits if params is not None else False
+        _bce_params = params.asdict() if params is not None else {}
         
         # Initialize loss functions with user-provided parameters or PyTorch defaults
         self.bce_loss = nn.BCEWithLogitsLoss(**_bce_params) if with_logits else nn.BCELoss(**_bce_params)

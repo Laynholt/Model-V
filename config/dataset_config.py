@@ -98,6 +98,10 @@ class DatasetTrainingConfig(BaseModel):
           - If is_split is True, validates pre_split (train_dir must be non-empty and exist; if provided, valid_dir and test_dir must exist).
           - If is_split is False, validates split (all_data_dir must be non-empty and exist).
         """
+        if any(isinstance(s, float) for s in (self.train_size, self.valid_size, self.test_size)):
+            if (self.train_size + self.valid_size + self.test_size) > 1:
+                raise ValueError("The total sample size with dynamically defined sizes must be <= 1")
+        
         if not self.is_split:
             if not self.split.all_data_dir:
                 raise ValueError("When is_split is False, all_data_dir must be provided and non-empty in pre_split")

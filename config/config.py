@@ -1,29 +1,41 @@
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
 from .dataset_config import DatasetConfig
 
-class Config(BaseModel):
-    model: Dict[str, Union[BaseModel, List[BaseModel]]]
-    dataset_config: DatasetConfig
-    criterion: Optional[Dict[str, Union[BaseModel, List[BaseModel]]]] = None
-    optimizer: Optional[Dict[str, Union[BaseModel, List[BaseModel]]]] = None
-    scheduler: Optional[Dict[str, Union[BaseModel, List[BaseModel]]]] = None
 
-    @staticmethod
-    def __dump_field(value: Any) -> Any:
+__all__ = ["Config", "ComponentConfig"]
+
+
+class ComponentConfig(BaseModel):
+    name: str
+    params: BaseModel
+
+    def dump(self) -> Dict[str, Any]:
         """
-        Recursively dumps a field if it is a BaseModel or a list/dict of BaseModels.
+        Recursively serializes the component into a dictionary.
+
+        Returns:
+            dict: A dictionary containing the component name and its serialized parameters.
         """
-        if isinstance(value, BaseModel):
-            return value.model_dump()
-        elif isinstance(value, list):
-            return [Config.__dump_field(item) for item in value]
-        elif isinstance(value, dict):
-            return {k: Config.__dump_field(v) for k, v in value.items()}
+        if isinstance(self.params, BaseModel):
+            params_dump = self.params.model_dump()
         else:
-            return value
+            params_dump = self.params
+        return {
+            "name": self.name,
+            "params": params_dump
+        }
+        
+
+
+class Config(BaseModel):
+    model: ComponentConfig
+    dataset_config: DatasetConfig
+    criterion: Optional[ComponentConfig] = None
+    optimizer: Optional[ComponentConfig] = None
+    scheduler: Optional[ComponentConfig] = None
 
     def save_json(self, file_path: str, indent: int = 4) -> None:
         """
@@ -34,15 +46,15 @@ class Config(BaseModel):
             indent (int): Indentation level for the JSON file.
         """
         config_dump = {
-            "model": self.__dump_field(self.model),
+            "model": self.model.dump(),
             "dataset_config": self.dataset_config.model_dump()
         }
         if self.criterion is not None:
-            config_dump.update({"criterion": self.__dump_field(self.criterion)})
+            config_dump["criterion"] = self.criterion.dump()
         if self.optimizer is not None:
-            config_dump.update({"optimizer": self.__dump_field(self.optimizer)})
+            config_dump["optimizer"] = self.optimizer.dump()
         if self.scheduler is not None:
-            config_dump.update({"scheduler": self.__dump_field(self.scheduler)})
+            config_dump["scheduler"] = self.scheduler.dump()
         
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(config_dump, indent=indent))
@@ -67,16 +79,15 @@ class Config(BaseModel):
         dataset_config = DatasetConfig(**data.get("dataset_config", {}))
 
         # Helper function to parse registry fields.
-        def parse_field(field_data: Dict[str, Any], registry_getter) -> Dict[str, Union[BaseModel, List[BaseModel]]]:
-            result = {}
-            for key, value in field_data.items():
-                expected = registry_getter(key)
-                # If the registry returns a tuple, then we expect a list of dictionaries.
-                if isinstance(expected, tuple):
-                    result[key] = [cls_param(**item) for cls_param, item in zip(expected, value)]
-                else:
-                    result[key] = expected(**value)
-            return result
+        def parse_field(component_data: Dict[str, Any], registry_getter) -> Optional[ComponentConfig]:
+            name = component_data.get("name")
+            params_data = component_data.get("params", {})
+            
+            if name is not None:
+                expected = registry_getter(name)
+                params = expected(**params_data)
+                return ComponentConfig(name=name, params=params)
+            return None
 
         from core import (
             ModelRegistry, CriterionRegistry, OptimizerRegistry, SchedulerRegistry
@@ -86,6 +97,9 @@ class Config(BaseModel):
         parsed_criterion = parse_field(data.get("criterion", {}), lambda key: CriterionRegistry.get_criterion_params(key))
         parsed_optimizer = parse_field(data.get("optimizer", {}), lambda key: OptimizerRegistry.get_optimizer_params(key))
         parsed_scheduler = parse_field(data.get("scheduler", {}), lambda key: SchedulerRegistry.get_scheduler_params(key))
+
+        if parsed_model is None:
+            raise ValueError('Failed to load model information')
 
         return cls(
             model=parsed_model,

@@ -61,7 +61,7 @@ class ModelRegistry:
         return entry["class"]
     
     @classmethod
-    def get_model_params(cls, name: str) -> Union[Type[BaseModel], Tuple[Type[BaseModel]]]:
+    def get_model_params(cls, name: str) -> Type[BaseModel]:
         """
         Retrieves the model parameter class by name (case-insensitive).
         
@@ -69,7 +69,7 @@ class ModelRegistry:
             name (str): Name of the model.
         
         Returns:
-            Union[Type[BaseModel], Tuple[Type[BaseModel]]]: The model parameter class or a tuple of parameter classes.
+            Type[BaseModel]: The model parameter class.
         """
         entry = cls.__get_entry(name)
         return entry["params"]

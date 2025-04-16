@@ -1,14 +1,15 @@
-import torch.optim as optim
 from pydantic import BaseModel
 from typing import Dict, Final, Tuple, Type, List, Any, Union
 
-from .adam import AdamParams
-from .adamw import AdamWParams
-from .sgd import SGDParams
+from .base import BaseOptimizer
+from .adam import AdamParams, AdamOptimizer
+from .adamw import AdamWParams, AdamWOptimizer
+from .sgd import SGDParams, SGDOptimizer
 
 __all__ = [
-    "OptimizerRegistry",
-    "AdamParams", "AdamWParams", "SGDParams"
+    "OptimizerRegistry", "BaseOptimizer",
+    "AdamParams", "AdamWParams", "SGDParams",
+    "AdamOptimizer", "AdamWOptimizer", "SGDOptimizer"
 ]
 
 class OptimizerRegistry:
@@ -17,15 +18,15 @@ class OptimizerRegistry:
     # Single dictionary storing both optimizer classes and parameter classes.
     __OPTIMIZERS: Final[Dict[str, Dict[str, Type[Any]]]] = {
         "SGD": {
-            "class": optim.SGD,
+            "class": SGDOptimizer,
             "params": SGDParams,
         },
         "Adam": {
-            "class": optim.Adam,
+            "class": AdamOptimizer,
             "params": AdamParams,
         },
         "AdamW": {
-            "class": optim.AdamW,
+            "class": AdamWOptimizer,
             "params": AdamWParams,
         },
     }
@@ -54,7 +55,7 @@ class OptimizerRegistry:
         return cls.__OPTIMIZERS[original_key]
     
     @classmethod
-    def get_optimizer_class(cls, name: str) -> Type[optim.Optimizer]:
+    def get_optimizer_class(cls, name: str) -> Type[BaseOptimizer]:
         """
         Retrieves the optimizer class by name (case-insensitive).
         
@@ -62,13 +63,13 @@ class OptimizerRegistry:
             name (str): Name of the optimizer.
         
         Returns:
-            Type[optim.Optimizer]: The optimizer class.
+            Type[BaseOptimizer]: The optimizer class.
         """
         entry = cls.__get_entry(name)
         return entry["class"]
     
     @classmethod
-    def get_optimizer_params(cls, name: str) -> Union[Type[BaseModel], Tuple[Type[BaseModel]]]:
+    def get_optimizer_params(cls, name: str) -> Type[BaseModel]:
         """
         Retrieves the optimizer parameter class by name (case-insensitive).
         
@@ -76,7 +77,7 @@ class OptimizerRegistry:
             name (str): Name of the optimizer.
         
         Returns:
-            Union[Type[BaseModel], Tuple[Type[BaseModel]]]: The optimizer parameter class or a tuple of parameter classes.
+            Type[BaseModel]: The optimizer parameter class.
         """
         entry = cls.__get_entry(name)
         return entry["params"]

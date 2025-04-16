@@ -1,6 +1,7 @@
 import abc
 import torch
 import torch.nn as nn
+from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from monai.metrics.cumulative_average import CumulativeAverage
 
@@ -8,9 +9,7 @@ from monai.metrics.cumulative_average import CumulativeAverage
 class BaseLoss(abc.ABC):
     """Custom loss function combining BCEWithLogitsLoss and MSE losses for cell recognition and distinction."""
 
-    def __init__(self):
-        """
-        """
+    def __init__(self, params: Optional[BaseModel] = None):
         super().__init__()
         
         

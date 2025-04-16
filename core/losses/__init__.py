@@ -5,12 +5,12 @@ from .base import BaseLoss
 from .ce import CrossEntropyLoss, CrossEntropyLossParams
 from .bce import BCELoss, BCELossParams
 from .mse import MSELoss, MSELossParams
-from .mse_with_bce import BCE_MSE_Loss
+from .mse_with_bce import BCE_MSE_Loss, BCE_MSE_LossParams
 
 __all__ = [
-    "CriterionRegistry",
+    "CriterionRegistry", "BaseLoss",
     "CrossEntropyLoss", "BCELoss", "MSELoss", "BCE_MSE_Loss",
-    "CrossEntropyLossParams", "BCELossParams", "MSELossParams"
+    "CrossEntropyLossParams", "BCELossParams", "MSELossParams", "BCE_MSE_LossParams"
 ]
 
 class CriterionRegistry:
@@ -31,7 +31,7 @@ class CriterionRegistry:
         },
         "BCE_MSE_Loss": {
             "class": BCE_MSE_Loss,
-            "params": (BCELossParams, MSELossParams),
+            "params": BCE_MSE_LossParams,
         },
     }
     
@@ -73,7 +73,7 @@ class CriterionRegistry:
         return entry["class"]
     
     @classmethod
-    def get_criterion_params(cls, name: str) -> Union[Type[BaseModel], Tuple[Type[BaseModel]]]:
+    def get_criterion_params(cls, name: str) -> Type[BaseModel]:
         """
         Retrieves the loss function parameter class (or classes) by name (case-insensitive).
         
@@ -81,7 +81,7 @@ class CriterionRegistry:
             name (str): Name of the loss function.
         
         Returns:
-            Union[Type[BaseModel], Tuple[Type[BaseModel]]]: The loss function parameter class or a tuple of parameter classes.
+            Type[BaseModel]: The loss function parameter class.
         """
         entry = cls.__get_entry(name)
         return entry["params"]

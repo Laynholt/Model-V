@@ -2,42 +2,59 @@ from .base import *
 from .bce import BCELossParams
 from .mse import MSELossParams
 
+from pydantic import BaseModel, ConfigDict
+
+
+class BCE_MSE_LossParams(BaseModel):
+    """
+    Class for handling parameters for `nn.MSELoss` with `nn.BCELoss`.
+    """
+    model_config = ConfigDict(frozen=True)
+    
+    num_classes: int = 1
+    bce_params: BCELossParams = BCELossParams()
+    mse_params: MSELossParams = MSELossParams()
+    
+    def asdict(self) -> Dict[str, Any]:
+        """
+        Returns a dictionary of valid parameters for `nn.BCELoss` and `nn.MSELoss`.
+
+        Returns:
+            Dict[str, Any]: Dictionary of parameters.
+        """
+        
+        return {
+            "num_classes": self.num_classes,
+            "bce_params": self.bce_params.asdict(),
+            "mse_params": self.mse_params.asdict()
+        }
+    
 
 class BCE_MSE_Loss(BaseLoss):
     """
     Custom loss function combining BCE (with or without logits) and MSE losses for cell recognition and distinction.
     """
 
-    def __init__(
-        self,
-        num_classes: int,
-        bce_params: Optional[BCELossParams] = None,
-        mse_params: Optional[MSELossParams] = None,
-        bce_with_logits: bool = False,
-    ):
+    def __init__(self, params: Optional[BCE_MSE_LossParams]):
         """
         Initializes the loss function with optional BCE and MSE parameters.
-
-        Args:
-            num_classes (int): Number of output classes, used for target shifting.
-            bce_params (Optional[BCELossParams]): Parameters for BCEWithLogitsLoss or BCELoss (default: None).
-            mse_params (Optional[MSELossParams]): Parameters for MSELoss (default: None).
-            bce_with_logits (bool): If True, uses BCEWithLogitsLoss; otherwise, uses BCELoss.
         """
-        super().__init__()
+        super().__init__(params=params)
 
-        self.num_classes = num_classes
+        _params = params if params is not None else BCE_MSE_LossParams()
+
+        self.num_classes = _params.num_classes
 
         # Process BCE parameters
-        _bce_params = bce_params.asdict(bce_with_logits) if bce_params is not None else {}
+        _bce_params = _params.bce_params.asdict()
 
         # Choose BCE loss function
         self.bce_loss = (
-            nn.BCEWithLogitsLoss(**_bce_params) if bce_with_logits else nn.BCELoss(**_bce_params)
+            nn.BCEWithLogitsLoss(**_bce_params) if _params.bce_params.with_logits else nn.BCELoss(**_bce_params)
         )
 
         # Process MSE parameters
-        _mse_params = mse_params.asdict() if mse_params is not None else {}
+        _mse_params = _params.mse_params.asdict()
 
         # Initialize MSE loss
         self.mse_loss = nn.MSELoss(**_mse_params)

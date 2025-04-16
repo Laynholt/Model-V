@@ -1,26 +1,13 @@
 import os
-from pydantic import BaseModel
-from typing import Any, Dict, Tuple, Type, Union, List
+from typing import Tuple
 
-from config.config import Config
+from config.config import *
 from config.dataset_config import DatasetConfig
 
 from core import (
     ModelRegistry, CriterionRegistry, OptimizerRegistry, SchedulerRegistry
 )
 
-
-def instantiate_params(param: Any) -> Union[BaseModel, List[BaseModel]]:
-    """
-    Instantiates the parameter class(es) with default values.
-    
-    If 'param' is a tuple, instantiate each class and return a list of instances.
-    Otherwise, instantiate the single class and return the instance.
-    """
-    if isinstance(param, tuple):
-        return [cls() for cls in param]
-    else:
-        return param()
 
 def prompt_choice(prompt_message: str, options: Tuple[str, ...]) -> str:
     """
@@ -55,11 +42,11 @@ def main():
     model_options = ModelRegistry.get_available_models()
     chosen_model = prompt_choice("\nSelect a model:", model_options)
     model_param_class = ModelRegistry.get_model_params(chosen_model)
-    model_instance = instantiate_params(model_param_class)
+    model_instance = model_param_class()
 
     if is_training is False:
         config = Config(
-            model={chosen_model: model_instance},
+            model=ComponentConfig(name=chosen_model, params=model_instance),
             dataset_config=dataset_config
         )
         
@@ -71,27 +58,27 @@ def main():
         criterion_options = CriterionRegistry.get_available_criterions()
         chosen_criterion = prompt_choice("\nSelect a criterion:", criterion_options)
         criterion_param_class = CriterionRegistry.get_criterion_params(chosen_criterion)
-        criterion_instance = instantiate_params(criterion_param_class)
+        criterion_instance = criterion_param_class()
 
         # Prompt the user to select an optimizer.
         optimizer_options = OptimizerRegistry.get_available_optimizers()
         chosen_optimizer = prompt_choice("\nSelect an optimizer:", optimizer_options)
         optimizer_param_class = OptimizerRegistry.get_optimizer_params(chosen_optimizer)
-        optimizer_instance = instantiate_params(optimizer_param_class)
+        optimizer_instance = optimizer_param_class()
 
         # Prompt the user to select a scheduler.
         scheduler_options = SchedulerRegistry.get_available_schedulers()
         chosen_scheduler = prompt_choice("\nSelect a scheduler:", scheduler_options)
         scheduler_param_class = SchedulerRegistry.get_scheduler_params(chosen_scheduler)
-        scheduler_instance = instantiate_params(scheduler_param_class)
+        scheduler_instance = scheduler_param_class()
 
         # Assemble the overall configuration using the registry names as keys.
         config = Config(
-            model={chosen_model: model_instance},
+            model=ComponentConfig(name=chosen_model, params=model_instance),
             dataset_config=dataset_config,
-            criterion={chosen_criterion: criterion_instance},
-            optimizer={chosen_optimizer: optimizer_instance},
-            scheduler={chosen_scheduler: scheduler_instance}
+            criterion=ComponentConfig(name=chosen_criterion, params=criterion_instance),
+            optimizer=ComponentConfig(name=chosen_optimizer, params=optimizer_instance),
+            scheduler=ComponentConfig(name=chosen_scheduler, params=scheduler_instance)
         )
         
         # Construct a base filename from the selected registry names.

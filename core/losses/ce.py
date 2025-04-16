@@ -36,15 +36,15 @@ class CrossEntropyLoss(BaseLoss):
     Custom loss function wrapper for `nn.CrossEntropyLoss` with tracking of loss metrics.
     """
 
-    def __init__(self, ce_params: Optional[CrossEntropyLossParams] = None):
+    def __init__(self, params: Optional[CrossEntropyLossParams] = None):
         """
         Initializes the loss function with optional CrossEntropyLoss parameters.
 
         Args:
-            ce_params (Optional[Dict[str, Any]]): Parameters for nn.CrossEntropyLoss (default: None).
+            params (Optional[Dict[str, Any]]): Parameters for nn.CrossEntropyLoss (default: None).
         """
-        super().__init__()
-        _ce_params = ce_params.asdict() if ce_params is not None else {}
+        super().__init__(params=params)
+        _ce_params = params.asdict() if params is not None else {}
         
         # Initialize loss functions with user-provided parameters or PyTorch defaults
         self.ce_loss = nn.CrossEntropyLoss(**_ce_params)

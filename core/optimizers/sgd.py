@@ -1,5 +1,9 @@
-from typing import Any, Dict
+import torch
+from torch import optim
+from typing import Any, Dict, Iterable, Optional
 from pydantic import BaseModel, ConfigDict
+
+from .base import BaseOptimizer
 
 
 class SGDParams(BaseModel):
@@ -15,3 +19,20 @@ class SGDParams(BaseModel):
     def asdict(self) -> Dict[str, Any]:
         """Returns a dictionary of valid parameters for `torch.optim.SGD`."""
         return self.model_dump()
+    
+    
+class SGDOptimizer(BaseOptimizer):
+    """
+    Wrapper around torch.optim.SGD.
+    """
+
+    def __init__(self, model_params: Iterable[torch.nn.Parameter], optim_params: SGDParams):
+        """
+        Initializes the SGD optimizer with given parameters.
+
+        Args:
+            model_params (Iterable[Parameter]): Parameters to optimize.
+            optim_params (SGDParams): Optimizer parameters.
+        """
+        super().__init__(model_params, optim_params)
+        self.optim = optim.SGD(model_params, **optim_params.asdict())

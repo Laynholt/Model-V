@@ -2,14 +2,16 @@ import torch.optim.lr_scheduler as lr_scheduler
 from typing import Dict, Final, Tuple, Type, List, Any, Union
 from pydantic import BaseModel
 
-from .step import StepLRParams
-from .multi_step import MultiStepLRParams
-from .exponential import ExponentialLRParams
-from .cosine_annealing import CosineAnnealingLRParams
+from .base import BaseScheduler
+from .step import StepLRParams, StepLRScheduler
+from .multi_step import MultiStepLRParams, MultiStepLRScheduler
+from .exponential import ExponentialLRParams, ExponentialLRScheduler
+from .cosine_annealing import CosineAnnealingLRParams, CosineAnnealingLRScheduler
 
 __all__ = [
-    "SchedulerRegistry",
-    "StepLRParams", "MultiStepLRParams", "ExponentialLRParams", "CosineAnnealingLRParams"
+    "SchedulerRegistry", "BaseScheduler",
+    "StepLRParams", "MultiStepLRParams", "ExponentialLRParams", "CosineAnnealingLRParams",
+    "StepLRScheduler", "MultiStepLRScheduler", "ExponentialLRScheduler", "CosineAnnealingLRScheduler"
 ]
 
 class SchedulerRegistry:
@@ -17,19 +19,19 @@ class SchedulerRegistry:
     
     __SCHEDULERS: Final[Dict[str, Dict[str, Type[Any]]]] = {
         "Step": {
-            "class": lr_scheduler.StepLR,
+            "class": StepLRScheduler,
             "params": StepLRParams,
         },
         "Exponential": {
-            "class": lr_scheduler.ExponentialLR,
+            "class": ExponentialLRScheduler,
             "params": ExponentialLRParams,
         },
         "MultiStep": {
-            "class": lr_scheduler.MultiStepLR,
+            "class": MultiStepLRScheduler,
             "params": MultiStepLRParams,
         },
         "CosineAnnealing": {
-            "class": lr_scheduler.CosineAnnealingLR,
+            "class": CosineAnnealingLRScheduler,
             "params": CosineAnnealingLRParams,
         },
     }
@@ -58,7 +60,7 @@ class SchedulerRegistry:
         return cls.__SCHEDULERS[original_key]
     
     @classmethod
-    def get_scheduler_class(cls, name: str) -> Type[lr_scheduler.LRScheduler]:
+    def get_scheduler_class(cls, name: str) -> Type[BaseScheduler]:
         """
         Retrieves the scheduler class by name (case-insensitive).
         
@@ -66,13 +68,13 @@ class SchedulerRegistry:
             name (str): Name of the scheduler.
         
         Returns:
-            Type[lr_scheduler.LRScheduler]: The scheduler class.
+            Type[BaseScheduler]: The scheduler class.
         """
         entry = cls.__get_entry(name)
         return entry["class"]
     
     @classmethod
-    def get_scheduler_params(cls, name: str) -> Union[Type[BaseModel], Tuple[Type[BaseModel]]]:
+    def get_scheduler_params(cls, name: str) -> Type[BaseModel]:
         """
         Retrieves the scheduler parameter class by name (case-insensitive).
         
@@ -80,7 +82,7 @@ class SchedulerRegistry:
             name (str): Name of the scheduler.
         
         Returns:
-            Union[Type[BaseModel], Tuple[Type[BaseModel]]]: The scheduler parameter class or a tuple of parameter classes.
+            Type[BaseModel]: The scheduler parameter class.
         """
         entry = cls.__get_entry(name)
         return entry["params"]

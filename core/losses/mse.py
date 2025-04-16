@@ -27,15 +27,15 @@ class MSELoss(BaseLoss):
     Custom loss function wrapper for `nn.MSELoss` with tracking of loss metrics.
     """
 
-    def __init__(self, mse_params: Optional[MSELossParams] = None):
+    def __init__(self, params: Optional[MSELossParams] = None):
         """
         Initializes the loss function with optional MSELoss parameters.
 
         Args:
-            mse_params (Optional[MSELossParams]): Parameters for `nn.MSELoss` (default: None).
+            params (Optional[MSELossParams]): Parameters for `nn.MSELoss` (default: None).
         """
-        super().__init__()
-        _mse_params = mse_params.asdict() if mse_params is not None else {}
+        super().__init__(params=params)
+        _mse_params = params.asdict() if params is not None else {}
 
         # Initialize MSE loss with user-provided parameters or PyTorch defaults
         self.mse_loss = nn.MSELoss(**_mse_params)

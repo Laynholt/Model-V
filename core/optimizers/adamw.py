@@ -1,5 +1,9 @@
-from typing import Any, Dict, Tuple
+import torch
+from torch import optim
+from typing import Any, Dict, Iterable, Optional, Tuple
 from pydantic import BaseModel, ConfigDict
+
+from .base import BaseOptimizer
 
 class AdamWParams(BaseModel):
     """Configuration for `torch.optim.AdamW` optimizer."""
@@ -14,3 +18,20 @@ class AdamWParams(BaseModel):
     def asdict(self) -> Dict[str, Any]:
         """Returns a dictionary of valid parameters for `torch.optim.AdamW`."""
         return self.model_dump()
+    
+
+class AdamWOptimizer(BaseOptimizer):
+    """
+    Wrapper around torch.optim.AdamW.
+    """
+
+    def __init__(self, model_params: Iterable[torch.nn.Parameter], optim_params: AdamWParams):
+        """
+        Initializes the AdamW optimizer with given parameters.
+
+        Args:
+            model_params (Iterable[Parameter]): Parameters to optimize.
+            optim_params (AdamWParams): Optimizer parameters.
+        """
+        super().__init__(model_params, optim_params)
+        self.optim = optim.AdamW(model_params, **optim_params.asdict())

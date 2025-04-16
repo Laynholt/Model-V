@@ -8,7 +8,3 @@ pprint(config, indent=4)
 print('\n\n')
 config = Config.load_json('/workspace/ext_data/projects/model-v/config/templates/predict/ModelV.json')
 pprint(config, indent=4)
-
-print('\n\n')
-config = Config.load_json('/workspace/ext_data/projects/model-v/config/templates/predict/ModelV_1.json')
-pprint(config, indent=4)
