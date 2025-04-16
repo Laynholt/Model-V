@@ -7,6 +7,7 @@ class DatasetCommonConfig(BaseModel):
     """
     Common configuration fields shared by both training and testing.
     """
+    seed: Optional[int] = 0          # Seed for splitting if data is not pre-split (and all random operations)
     device: str = "cuda0"           # Device used for training/testing (e.g., 'cpu' or 'cuda')
     use_tta: bool = False           # Flag to use Test-Time Augmentation (TTA)
     predictions_dir: str = "."      # Directory to save predictions
@@ -25,10 +26,9 @@ class TrainingSplitInfo(BaseModel):
     """
     Configuration for training mode when data is NOT pre-split (is_split is False).
     Contains:
-        - split_seed: Seed for splitting.
         - all_data_dir: Directory containing all data.
     """
-    split_seed: int = 0             # Seed for splitting if data is not pre-split
+    shuffle: bool = True             # Shuffle data before splitting
     all_data_dir: str = "."          # Directory containing all data if not pre-split
 
 class TrainingPreSplitInfo(BaseModel):
@@ -124,6 +124,7 @@ class DatasetTrainingConfig(BaseModel):
         Validates numeric fields:
         - batch_size and num_epochs must be > 0.
         - val_freq must be >= 0.
+        - offsets must be >= 0.
         """
         if self.batch_size <= 0:
             raise ValueError("batch_size must be > 0")
@@ -131,6 +132,8 @@ class DatasetTrainingConfig(BaseModel):
             raise ValueError("num_epochs must be > 0")
         if self.val_freq < 0:
             raise ValueError("val_freq must be >= 0")
+        if self.train_offset < 0 or self.valid_offset < 0 or self.test_offset < 0:
+            raise ValueError("offsets must be >= 0")
         return self
 
     @model_validator(mode="after")
@@ -147,10 +150,12 @@ class DatasetTestingConfig(BaseModel):
     """
     Configuration fields used only in testing mode.
     """
-    test_dir: str = "."              # Test data directory; must be non-empty
-    test_size: Union[int, float] = 1.0    # Testing data size (int for static, float in (0,1] for dynamic)
-    test_offset: int = 0            # Offset for testing data 
-    use_ensemble: bool = False      # Flag to use ensemble mode in testing
+    test_dir: str = "."                    # Test data directory; must be non-empty
+    test_size: Union[int, float] = 1.0     # Testing data size (int for static, float in (0,1] for dynamic)
+    test_offset: int = 0                # Offset for testing data 
+    shuffle: bool = True                # Shuffle data
+    
+    use_ensemble: bool = False          # Flag to use ensemble mode in testing
     ensemble_pretrained_weights1: str = "."
     ensemble_pretrained_weights2: str = "."
     pretrained_weights: str = "."
@@ -169,6 +174,16 @@ class DatasetTestingConfig(BaseModel):
         else:
             raise ValueError("test_size must be either an int or a float")
         return v
+    
+    @model_validator(mode="after")
+    def validate_numeric_fields(self) -> "DatasetTestingConfig":
+        """
+        Validates numeric fields:
+        - test_offset must be >= 0.
+        """
+        if self.test_offset < 0:
+            raise ValueError("test_offset must be >= 0")
+        return self
 
     @model_validator(mode="after")
     def validate_testing(self) -> "DatasetTestingConfig":
@@ -218,8 +233,9 @@ class DatasetConfig(BaseModel):
                 raise ValueError("Training configuration must be provided when is_training is True")
             if self.training.train_size == 0:
                 raise ValueError("train_size must be provided when is_training is True")
-            if self.training.test_size > 0 and not self.common.predictions_dir:
-                raise ValueError("predictions_dir must be provided when test_size is non-zero")
+            if (self.training.is_split and self.training.pre_split.test_dir) or (not self.training.is_split):
+                if self.training.test_size > 0 and not self.common.predictions_dir:
+                    raise ValueError("predictions_dir must be provided when test_size is non-zero")
             if self.common.predictions_dir and not os.path.exists(self.common.predictions_dir):
                 raise ValueError(f"Path for predictions_dir does not exist: {self.common.predictions_dir}")
         else:
