@@ -18,11 +18,11 @@ class BoundaryExclusion(MapTransform):
     touches the image boundary.
     """
 
-    def __init__(self, keys: Sequence[str] = ("label",), allow_missing_keys: bool = False) -> None:
+    def __init__(self, keys: Sequence[str] = ("mask",), allow_missing_keys: bool = False) -> None:
         """
         Args:
             keys (Sequence[str]): Keys in the input dictionary corresponding to the label image.
-                                  Default is ("label",).
+                                  Default is ("mask",).
             allow_missing_keys (bool): If True, missing keys in the input will be ignored.
                                        Default is False.
         """
@@ -41,13 +41,13 @@ class BoundaryExclusion(MapTransform):
           6. Assigning the transformed label back into the input dictionary.
 
         Args:
-            data (Dict[str, np.ndarray]): Dictionary containing at least the "label" key with a label image.
+            data (Dict[str, np.ndarray]): Dictionary containing at least the "mask" key with a label image.
 
         Returns:
-            Dict[str, np.ndarray]: The input dictionary with the "label" key updated after boundary exclusion.
+            Dict[str, np.ndarray]: The input dictionary with the "mask" key updated after boundary exclusion.
         """
         # Retrieve the original label image.
-        label_original: np.ndarray = data["label"]
+        label_original: np.ndarray = data["mask"]
         # Create a deep copy of the original label for processing.
         label: np.ndarray = copy.deepcopy(label_original)
         # Detect cell boundaries with a thick boundary.
@@ -77,7 +77,7 @@ class BoundaryExclusion(MapTransform):
         new_label += label_original * bd
 
         # Update the input dictionary with the transformed label.
-        data["label"] = new_label
+        data["mask"] = new_label
 
         return data
 
@@ -93,7 +93,7 @@ class IntensityDiversification(MapTransform):
 
     def __init__(
         self,
-        keys: Sequence[str] = ("img",),
+        keys: Sequence[str] = ("image",),
         change_cell_ratio: float = 0.4,
         scale_factors: Union[Tuple[float, float], float] = (0.0, 0.7),
         allow_missing_keys: bool = False,
@@ -101,7 +101,7 @@ class IntensityDiversification(MapTransform):
         """
         Args:
             keys (Sequence[str]): Keys in the input dictionary corresponding to the image.
-                                  Default is ("img",).
+                                  Default is ("image",).
             change_cell_ratio (float): Ratio of cells to apply the intensity scaling.
                                        For example, 0.4 means 40% of the cells will be transformed.
                                        Default is 0.4.
@@ -137,11 +137,11 @@ class IntensityDiversification(MapTransform):
 
         Args:
             data (Dict[str, np.ndarray]): A dictionary containing:
-                - "img": The original image array.
-                - "label": The corresponding cell label image array.
+                - "image": The original image array.
+                - "mask": The corresponding cell label image array.
 
         Returns:
-            Dict[str, np.ndarray]: The updated dictionary with the "img" key modified after applying 
+            Dict[str, np.ndarray]: The updated dictionary with the "image" key modified after applying 
                                 the intensity transformation.
 
         Raises:
@@ -149,13 +149,13 @@ class IntensityDiversification(MapTransform):
         """
         # Extract the label information for all channels.
         # The label array has dimensions (C, H, W), where C is the number of channels.
-        label = data["label"]  # shape: (C, H, W)
+        label = data["mask"]  # shape: (C, H, W)
 
         # Process each channel independently.
         for c in range(label.shape[0]):
             # Extract the label and corresponding image channel for the current channel.
             channel_label = label[c]
-            img_channel = data["img"][c]
+            img_channel = data["image"][c]
 
             # Retrieve all unique cell IDs in the current channel.
             # Exclude the background (0) from these IDs.
@@ -187,6 +187,6 @@ class IntensityDiversification(MapTransform):
             img_changed = self.randscale_intensity(img_changed)
 
             # Combine the unchanged and modified parts to update the image channel.
-            data["img"][c] = img_orig + img_changed
+            data["image"][c] = img_orig + img_changed
 
         return data

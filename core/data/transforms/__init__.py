@@ -9,7 +9,7 @@ __all__ = [
     "get_train_transforms",
     "get_valid_transforms",
     "get_test_transforms",
-    "get_pred_transforms",
+    "get_predict_transforms",
 ]
 
 
@@ -33,21 +33,21 @@ def get_train_transforms():
     train_transforms = Compose(
         [
             # Load image and label data in (H, W, C) format (image loaded as image-only).
-            CustomLoadImaged(keys=["img", "label"], image_only=True),
+            CustomLoadImaged(keys=["image", "mask"], image_only=True),
             # Normalize the (H, W, C) image using the specified percentiles.
             CustomNormalizeImaged(
-                keys=["img"],
+                keys=["image"],
                 allow_missing_keys=True,
                 channel_wise=False,
                 percentiles=[0.0, 99.5],
             ),
             # Ensure both image and label are in channel-first format.
-            EnsureChannelFirstd(keys=["img", "label"], channel_dim=-1),
+            EnsureChannelFirstd(keys=["image", "mask"], channel_dim=-1),
             # Scale image intensities (do not scale the label).
-            ScaleIntensityd(keys=["img"], allow_missing_keys=True),
+            ScaleIntensityd(keys=["image"], allow_missing_keys=True),
             # Apply random zoom to both image and label.
             RandZoomd(
-                keys=["img", "label"],
+                keys=["image", "mask"],
                 prob=0.5,
                 min_zoom=0.25,
                 max_zoom=1.5,
@@ -55,27 +55,27 @@ def get_train_transforms():
                 keep_size=False,
             ),
             # Pad spatial dimensions to ensure a size of 512.
-            SpatialPadd(keys=["img", "label"], spatial_size=512),
+            SpatialPadd(keys=["image", "mask"], spatial_size=512),
             # Randomly crop a region of interest of size 512.
-            RandSpatialCropd(keys=["img", "label"], roi_size=512, random_size=False),
+            RandSpatialCropd(keys=["image", "mask"], roi_size=512, random_size=False),
             # Randomly flip the image and label along an axis.
-            RandAxisFlipd(keys=["img", "label"], prob=0.5),
+            RandAxisFlipd(keys=["image", "mask"], prob=0.5),
             # Randomly rotate the image and label by 90 degrees.
-            RandRotate90d(keys=["img", "label"], prob=0.5, spatial_axes=(0, 1)),
+            RandRotate90d(keys=["image", "mask"], prob=0.5, spatial_axes=(0, 1)),
             # Diversify intensities for selected cell regions.
-            IntensityDiversification(keys=["img", "label"], allow_missing_keys=True),
+            IntensityDiversification(keys=["image", "mask"], allow_missing_keys=True),
             # Apply random Gaussian noise to the image.
-            RandGaussianNoised(keys=["img"], prob=0.25, mean=0, std=0.1),
+            RandGaussianNoised(keys=["image"], prob=0.25, mean=0, std=0.1),
             # Randomly adjust the contrast of the image.
-            RandAdjustContrastd(keys=["img"], prob=0.25, gamma=(1, 2)),
+            RandAdjustContrastd(keys=["image"], prob=0.25, gamma=(1, 2)),
             # Apply random Gaussian smoothing to the image.
-            RandGaussianSmoothd(keys=["img"], prob=0.25, sigma_x=(1, 2)),
+            RandGaussianSmoothd(keys=["image"], prob=0.25, sigma_x=(1, 2)),
             # Randomly shift the histogram of the image.
-            RandHistogramShiftd(keys=["img"], prob=0.25, num_control_points=3),
+            RandHistogramShiftd(keys=["image"], prob=0.25, num_control_points=3),
             # Apply random Gaussian sharpening to the image.
-            RandGaussianSharpend(keys=["img"], prob=0.25),
+            RandGaussianSharpend(keys=["image"], prob=0.25),
             # Ensure that the data types are correct.
-            EnsureTyped(keys=["img", "label"]),
+            EnsureTyped(keys=["image", "mask"]),
         ]
     )
     return train_transforms
@@ -98,20 +98,20 @@ def get_valid_transforms():
     valid_transforms = Compose(
         [
             # Load image and label data in (H, W, C) format (image loaded as image-only; allow missing keys).
-            CustomLoadImaged(keys=["img", "label"], allow_missing_keys=True, image_only=True),
+            CustomLoadImaged(keys=["image", "mask"], allow_missing_keys=True, image_only=True),
             # Normalize the (H, W, C) image using the specified percentiles.
             CustomNormalizeImaged(
-                keys=["img"],
+                keys=["image"],
                 allow_missing_keys=True,
                 channel_wise=False,
                 percentiles=[0.0, 99.5],
             ),
             # Ensure both image and label are in channel-first format.
-            EnsureChannelFirstd(keys=["img", "label"], allow_missing_keys=True, channel_dim=-1),
+            EnsureChannelFirstd(keys=["image", "mask"], allow_missing_keys=True, channel_dim=-1),
             # Scale image intensities.
-            ScaleIntensityd(keys=["img"], allow_missing_keys=True),
+            ScaleIntensityd(keys=["image"], allow_missing_keys=True),
             # Ensure that the data types are correct.
-            EnsureTyped(keys=["img", "label"], allow_missing_keys=True),
+            EnsureTyped(keys=["image", "mask"], allow_missing_keys=True),
         ]
     )
     return valid_transforms
@@ -134,26 +134,26 @@ def get_test_transforms():
     test_transforms = Compose(
         [
             # Load image and label data in (H, W, C) format (image loaded as image-only; allow missing keys).
-            CustomLoadImaged(keys=["img", "label"], allow_missing_keys=True, image_only=True),
+            CustomLoadImaged(keys=["image", "mask"], allow_missing_keys=True, image_only=True),
             # Normalize the (H, W, C) image using the specified percentiles.
             CustomNormalizeImaged(
-                keys=["img"],
+                keys=["image"],
                 allow_missing_keys=True,
                 channel_wise=False,
                 percentiles=[0.0, 99.5],
             ),
             # Ensure both image and label are in channel-first format.
-            EnsureChannelFirstd(keys=["img", "label"], allow_missing_keys=True, channel_dim=-1),
+            EnsureChannelFirstd(keys=["image", "mask"], allow_missing_keys=True, channel_dim=-1),
             # Scale image intensities.
-            ScaleIntensityd(keys=["img"], allow_missing_keys=True),
+            ScaleIntensityd(keys=["image"], allow_missing_keys=True),
             # Ensure that the data types are correct.
-            EnsureTyped(keys=["img", "label"], allow_missing_keys=True),
+            EnsureTyped(keys=["image", "mask"], allow_missing_keys=True),
         ]
     )
     return test_transforms
 
 
-def get_pred_transforms():
+def get_predict_transforms():
     """
     Returns the transformation pipeline for prediction preprocessing.
 
