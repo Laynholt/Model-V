@@ -13,12 +13,14 @@ from typing import Dict, List, Tuple, Any, Union
 
 __all__ = [
     "compute_batch_segmentation_f1_metrics", "compute_batch_segmentation_average_precision_metrics",
+    "compute_batch_segmentation_tp_fp_fn",
     "compute_segmentation_f1_metrics", "compute_segmentation_average_precision_metrics",
-    "compute_confusion_matrix", "compute_f1_scores", "compute_average_precision_score"
+    "compute_segmentation_tp_fp_fn",
+    "compute_confusion_matrix", "compute_f1_score", "compute_average_precision_score"
 ]
         
 
-def compute_f1_scores(
+def compute_f1_score(
     true_positives: int,
     false_positives: int,
     false_negatives: int
@@ -103,7 +105,7 @@ def compute_confusion_matrix(
     return true_positive_count, false_positive_count, false_negative_count
 
 
-def compute_segmentation_f1_metrics(
+def compute_segmentation_tp_fp_fn(
     ground_truth_mask: np.ndarray,
     predicted_mask: np.ndarray,
     iou_threshold: float = 0.5,
@@ -111,36 +113,32 @@ def compute_segmentation_f1_metrics(
     remove_boundary_objects: bool = True
 ) -> Dict[str, np.ndarray]:
     """
-    Computes F1 metrics (precision, recall, F1-score) for segmentation on a single image.
+    Computes TP, FP and FN for segmentation on a single image.
     
-    If the input masks have shape (H, W), they are expanded to (H, W, 1).
-    For multi-channel inputs (H, W, C), each channel is processed independently, and the returned
-    metrics (precision, recall, f1_score, TP, FP, FN) are provided as NumPy arrays with shape (C,).
+    If the input masks have shape (H, W), they are expanded to (1, H, W).
+    For multi-channel inputs (C, H, W), each channel is processed independently, and the returned
+    metrics (TP, FP, FN) are provided as NumPy arrays with shape (C,).
     
     Optionally, if return_error_masks is True, binary error masks for true positives, false positives,
-    and false negatives are also returned with shape (H, W, C).
+    and false negatives are also returned with shape (C, H, W).
     
     Args:
-        ground_truth_mask: Ground truth segmentation mask (HxW or HxWxC).
-        predicted_mask: Predicted segmentation mask (HxW or HxWxC).
+        ground_truth_mask: Ground truth segmentation mask (HxW or CxHxW).
+        predicted_mask: Predicted segmentation mask (HxW or CxHxW).
         iou_threshold: IoU threshold for matching objects.
         return_error_masks: Whether to also return binary error masks.
         remove_boundary_objects: Whether to remove objects that touch the image boundary.
     
     Returns:
         A dictionary with the following keys:
-          - 'precision', 'recall', 'f1_score': arrays of shape (C,)
           - 'tp', 'fp', 'fn': arrays of shape (C,)
-          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask' with shape (H, W, C)
+          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask' with shape (C, H, W)
     """
     # If the masks are 2D, add a singleton channel dimension.
-    ground_truth_mask = _ensure_ndim(ground_truth_mask, 3, insert_position=-1)
-    predicted_mask = _ensure_ndim(predicted_mask, 3, insert_position=-1)
+    ground_truth_mask = _ensure_ndim(ground_truth_mask, 3, insert_position=0)
+    predicted_mask = _ensure_ndim(predicted_mask, 3, insert_position=0)
 
-    num_channels = ground_truth_mask.shape[-1]
-    precision_list = []
-    recall_list = []
-    f1_score_list = []
+    num_channels = ground_truth_mask.shape[0]
     true_positive_list = []
     false_positive_list = []
     false_negative_list = []
@@ -151,8 +149,8 @@ def compute_segmentation_f1_metrics(
 
     # Process each channel independently.
     for channel in range(num_channels):
-        channel_ground_truth = ground_truth_mask[..., channel]
-        channel_prediction = predicted_mask[..., channel]
+        channel_ground_truth = ground_truth_mask[channel, ...]
+        channel_prediction = predicted_mask[channel, ...]
         if np.prod(channel_ground_truth.shape) < (5000 * 5000):
             results = _process_instance_matching(
                 channel_ground_truth, channel_prediction, iou_threshold,
@@ -166,12 +164,7 @@ def compute_segmentation_f1_metrics(
         tp = results['tp']
         fp = results['fp']
         fn = results['fn']
-        precision, recall, f1_score = compute_f1_scores(
-            tp, fp, fn # type: ignore
-        )
-        precision_list.append(precision)
-        recall_list.append(recall)
-        f1_score_list.append(f1_score)
+
         true_positive_list.append(tp)
         false_positive_list.append(fp)
         false_negative_list.append(fn)
@@ -181,17 +174,75 @@ def compute_segmentation_f1_metrics(
             false_negative_mask_list.append(results.get('fn_mask')) # type: ignore
 
     output: Dict[str, np.ndarray] = {
-        'precision': np.array(precision_list),
-        'recall': np.array(recall_list),
-        'f1_score': np.array(f1_score_list),
         'tp': np.array(true_positive_list),
         'fp': np.array(false_positive_list),
         'fn': np.array(false_negative_list)
     }
     if return_error_masks:
-        output['tp_mask'] = np.stack(true_positive_mask_list, axis=-1) # type: ignore
-        output['fp_mask'] = np.stack(false_positive_mask_list, axis=-1) # type: ignore
-        output['fn_mask'] = np.stack(false_negative_mask_list, axis=-1) # type: ignore
+        output['tp_mask'] = np.stack(true_positive_mask_list, axis=0) # type: ignore
+        output['fp_mask'] = np.stack(false_positive_mask_list, axis=0) # type: ignore
+        output['fn_mask'] = np.stack(false_negative_mask_list, axis=0) # type: ignore
+    return output
+
+
+def compute_segmentation_f1_metrics(
+    ground_truth_mask: np.ndarray,
+    predicted_mask: np.ndarray,
+    iou_threshold: float = 0.5,
+    return_error_masks: bool = False,
+    remove_boundary_objects: bool = True
+) -> Dict[str, np.ndarray]:
+    """
+    Computes F1 metrics (precision, recall, F1-score) for segmentation on a single image.
+    
+    If the input masks have shape (H, W), they are expanded to (1, H, W).
+    For multi-channel inputs (C, H, W), each channel is processed independently, and the returned
+    metrics (precision, recall, f1_score, TP, FP, FN) are provided as NumPy arrays with shape (C,).
+    
+    Optionally, if return_error_masks is True, binary error masks for true positives, false positives,
+    and false negatives are also returned with shape (C, H, W).
+    
+    Args:
+        ground_truth_mask: Ground truth segmentation mask (HxW or CxHxW).
+        predicted_mask: Predicted segmentation mask (HxW or CxHxW).
+        iou_threshold: IoU threshold for matching objects.
+        return_error_masks: Whether to also return binary error masks.
+        remove_boundary_objects: Whether to remove objects that touch the image boundary.
+    
+    Returns:
+        A dictionary with the following keys:
+          - 'precision', 'recall', 'f1_score': arrays of shape (C,)
+          - 'tp', 'fp', 'fn': arrays of shape (C,)
+          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask' with shape (C, H, W)
+    """
+    num_channels = ground_truth_mask.shape[0]
+    precision_list = []
+    recall_list = []
+    f1_score_list = []
+    
+    results = compute_segmentation_tp_fp_fn(
+        ground_truth_mask, predicted_mask,
+        iou_threshold, return_error_masks,
+        remove_boundary_objects
+    )
+    # Process each channel independently.
+    for channel in range(num_channels):
+        tp = results['tp'][channel]
+        fp = results['fp'][channel]
+        fn = results['fn'][channel]
+        precision, recall, f1_score = compute_f1_score(
+            tp, fp, fn # type: ignore
+        )
+        precision_list.append(precision)
+        recall_list.append(recall)
+        f1_score_list.append(f1_score)
+
+    output: Dict[str, np.ndarray] = {
+        'precision': np.array(precision_list),
+        'recall': np.array(recall_list),
+        'f1_score': np.array(f1_score_list),
+    }
+    output.update(results)
     return output
 
 
@@ -205,16 +256,16 @@ def compute_segmentation_average_precision_metrics(
     """
     Computes the average precision (AP) for segmentation on a single image.
     
-    If the input masks have shape (H, W), they are expanded to (H, W, 1).
-    For multi-channel inputs (H, W, C), each channel is processed independently and the returned
+    If the input masks have shape (H, W), they are expanded to (1, H, W).
+    For multi-channel inputs (C, H, W), each channel is processed independently and the returned
     metrics (average precision, TP, FP, FN) are provided as NumPy arrays with shape (C,).
     
     Optionally, if return_error_masks is True, binary error masks for true positives, false positives,
-    and false negatives are also returned with shape (H, W, C).
+    and false negatives are also returned with shape (C, H, W).
     
     Args:
-        ground_truth_mask: Ground truth segmentation mask (HxW or HxWxC).
-        predicted_mask: Predicted segmentation mask (HxW or HxWxC).
+        ground_truth_mask: Ground truth segmentation mask (HxW or CxHxW).
+        predicted_mask: Predicted segmentation mask (HxW or CxHxW).
         iou_threshold: IoU threshold for matching objects.
         return_error_masks: Whether to also return binary error masks.
         remove_boundary_objects: Whether to remove objects that touch the image boundary.
@@ -223,62 +274,99 @@ def compute_segmentation_average_precision_metrics(
         A dictionary with the following keys:
           - 'avg_precision': array of shape (C,)
           - 'tp', 'fp', 'fn': arrays of shape (C,)
-          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask' with shape (H, W, C)
+          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask' with shape (C, H, W)
     """
-    ground_truth_mask = _ensure_ndim(ground_truth_mask, 3, insert_position=-1)
-    predicted_mask = _ensure_ndim(predicted_mask, 3, insert_position=-1)
-
-    num_channels = ground_truth_mask.shape[-1]
+    num_channels = ground_truth_mask.shape[0]
     avg_precision_list = []
-    true_positive_list = []
-    false_positive_list = []
-    false_negative_list = []
-    if return_error_masks:
-        true_positive_mask_list = []
-        false_positive_mask_list = []
-        false_negative_mask_list = []
+    
+    results = compute_segmentation_tp_fp_fn(
+        ground_truth_mask, predicted_mask,
+        iou_threshold, return_error_masks,
+        remove_boundary_objects
+    )
 
     # Process each channel independently.
     for channel in range(num_channels):
-        channel_ground_truth = ground_truth_mask[..., channel]
-        channel_prediction = predicted_mask[..., channel]
-        if np.prod(channel_ground_truth.shape) < (5000 * 5000):
-            results = _process_instance_matching(
-                channel_ground_truth, channel_prediction,
-                iou_threshold,
-                return_masks=return_error_masks, without_boundary_objects=remove_boundary_objects
-            )
-        else:
-            results = _compute_patch_based_metrics(
-                channel_ground_truth, channel_prediction,
-                iou_threshold,
-                return_masks=return_error_masks, without_boundary_objects=remove_boundary_objects
-            )
-        tp = results['tp']
-        fp = results['fp']
-        fn = results['fn']
+        tp = results['tp'][channel]
+        fp = results['fp'][channel]
+        fn = results['fn'][channel]
         avg_precision = compute_average_precision_score(
             tp, fp, fn # type: ignore
         )
         avg_precision_list.append(avg_precision)
-        true_positive_list.append(tp)
-        false_positive_list.append(fp)
-        false_negative_list.append(fn)
+        
+    output: Dict[str, np.ndarray] = {
+        'avg_precision': np.array(avg_precision_list)
+    }
+    output.update(results)
+    return output
+
+
+def compute_batch_segmentation_tp_fp_fn(
+    batch_ground_truth: np.ndarray,
+    batch_prediction: np.ndarray,
+    iou_threshold: float = 0.5,
+    return_error_masks: bool = False,
+    remove_boundary_objects: bool = True
+) -> Dict[str, np.ndarray]:
+    """
+    Computes segmentation TP, FP and FN for a batch of images.
+    
+    Expects inputs with shape (B, C, H, W). For each image in the batch, the data is extracted
+    into (C, H, W) and then processed using compute_segmentation_tp_fp_fn. The results are stacked
+    so that each metric has shape (B, C). If error masks are returned, their shape will be (B, C, H, W).
+    
+    Args:
+        batch_ground_truth: Batch of ground truth masks (BxCxHxW).
+        batch_prediction: Batch of predicted masks (BxCxHxW).
+        iou_threshold: IoU threshold for matching objects.
+        return_error_masks: Whether to also return binary error masks.
+        remove_boundary_objects: Whether to remove objects that touch the image boundary.
+    
+    Returns:
+        A dictionary with keys:
+          - 'tp', 'fp', 'fn': arrays of shape (B, C)
+          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask': arrays of shape (B, C, H, W)
+    """
+    batch_ground_truth = _ensure_ndim(batch_ground_truth, 4, insert_position=0)
+    batch_prediction = _ensure_ndim(batch_prediction, 4, insert_position=0)
+    
+    batch_size = batch_ground_truth.shape[0]
+    tp_list = []
+    fp_list = []
+    fn_list = []
+    if return_error_masks:
+        tp_mask_list = []
+        fp_mask_list = []
+        fn_mask_list = []
+
+    for i in range(batch_size):
+        image_ground_truth = batch_ground_truth[i]
+        image_prediction = batch_prediction[i]
+        result = compute_segmentation_tp_fp_fn(
+            image_ground_truth,
+            image_prediction,
+            iou_threshold,
+            return_error_masks,
+            remove_boundary_objects
+        )
+        tp_list.append(result['tp'])
+        fp_list.append(result['fp'])
+        fn_list.append(result['fn'])
         if return_error_masks:
-            true_positive_mask_list.append(results.get('tp_mask')) # type: ignore
-            false_positive_mask_list.append(results.get('fp_mask')) # type: ignore
-            false_negative_mask_list.append(results.get('fn_mask')) # type: ignore
+            tp_mask_list.append(result.get('tp_mask')) # type: ignore
+            fp_mask_list.append(result.get('fp_mask')) # type: ignore
+            fn_mask_list.append(result.get('fn_mask')) # type: ignore
 
     output: Dict[str, np.ndarray] = {
-        'avg_precision': np.array(avg_precision_list),
-        'tp': np.array(true_positive_list),
-        'fp': np.array(false_positive_list),
-        'fn': np.array(false_negative_list)
+        'tp': np.stack(tp_list, axis=0),
+        'fp': np.stack(fp_list, axis=0),
+        'fn': np.stack(fn_list, axis=0)
     }
     if return_error_masks:
-        output['tp_mask'] = np.stack(true_positive_mask_list, axis=-1) # type: ignore
-        output['fp_mask'] = np.stack(false_positive_mask_list, axis=-1) # type: ignore
-        output['fn_mask'] = np.stack(false_negative_mask_list, axis=-1) # type: ignore
+        output['tp_mask'] = np.stack(tp_mask_list, axis=0) # type: ignore
+        output['fp_mask'] = np.stack(fp_mask_list, axis=0) # type: ignore
+        output['fn_mask'] = np.stack(fn_mask_list, axis=0) # type: ignore
     return output
 
 
@@ -292,9 +380,9 @@ def compute_batch_segmentation_f1_metrics(
     """
     Computes segmentation F1 metrics for a batch of images.
     
-    Expects inputs with shape (B, C, H, W). For each image in the batch, the data is transposed
-    to (H, W, C) and then processed with compute_segmentation_f1_metrics. The results are stacked
-    so that each metric has shape (B, C). If error masks are returned, their shape will be (B, H, W, C).
+    Expects inputs with shape (B, C, H, W). For each image in the batch, the data is extracted
+    into (C, H, W) and then processed using compute_segmentation_f1_metrics. The results are stacked
+    so that each metric has shape (B, C). If error masks are returned, their shape will be (B, C, H, W).
     
     Args:
         batch_ground_truth: Batch of ground truth masks (BxCxHxW).
@@ -306,10 +394,10 @@ def compute_batch_segmentation_f1_metrics(
     Returns:
         A dictionary with keys:
           - 'precision', 'recall', 'f1_score', 'tp', 'fp', 'fn': arrays of shape (B, C)
-          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask': arrays of shape (B, H, W, C)
+          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask': arrays of shape (B, C, H, W)
     """
-    batch_ground_truth = _ensure_ndim(batch_ground_truth, 4)
-    batch_prediction = _ensure_ndim(batch_prediction, 4)
+    batch_ground_truth = _ensure_ndim(batch_ground_truth, 4, insert_position=0)
+    batch_prediction = _ensure_ndim(batch_prediction, 4, insert_position=0)
     
     batch_size = batch_ground_truth.shape[0]
     precision_list = []
@@ -324,9 +412,8 @@ def compute_batch_segmentation_f1_metrics(
         fn_mask_list = []
 
     for i in range(batch_size):
-        # Each image is expected to have shape (C, H, W); transpose to (H, W, C)
-        image_ground_truth = np.transpose(batch_ground_truth[i], (1, 2, 0))
-        image_prediction = np.transpose(batch_prediction[i], (1, 2, 0))
+        image_ground_truth = batch_ground_truth[i]
+        image_prediction = batch_prediction[i]
         result = compute_segmentation_f1_metrics(
             image_ground_truth,
             image_prediction,
@@ -370,9 +457,9 @@ def compute_batch_segmentation_average_precision_metrics(
     """
     Computes segmentation average precision metrics for a batch of images.
     
-    Expects inputs with shape (B, C, H, W). For each image in the batch, the data is transposed
-    to (H, W, C) and then processed with compute_segmentation_average_precision_metrics. The results are stacked
-    so that each metric has shape (B, C). If error masks are returned, their shape will be (B, H, W, C).
+    Expects inputs with shape (B, C, H, W). For each image in the batch, the data is extracted
+    into (C, H, W) and then processed using compute_segmentation_average_precision_metrics. The results are stacked
+    so that each metric has shape (B, C). If error masks are returned, their shape will be (B, C, H, W).
     
     Args:
         batch_ground_truth: Batch of ground truth masks (BxCxHxW).
@@ -384,10 +471,10 @@ def compute_batch_segmentation_average_precision_metrics(
     Returns:
         A dictionary with keys:
           - 'avg_precision', 'tp', 'fp', 'fn': arrays of shape (B, C)
-          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask': arrays of shape (B, H, W, C)
+          - If return_error_masks is True: 'tp_mask', 'fp_mask', 'fn_mask': arrays of shape (B, C, H, W)
     """
-    batch_ground_truth = _ensure_ndim(batch_ground_truth, 4)
-    batch_prediction = _ensure_ndim(batch_prediction, 4)
+    batch_ground_truth = _ensure_ndim(batch_ground_truth, 4, insert_position=0)
+    batch_prediction = _ensure_ndim(batch_prediction, 4, insert_position=0)
     
     batch_size = batch_ground_truth.shape[0]
     avg_precision_list = []
@@ -400,10 +487,14 @@ def compute_batch_segmentation_average_precision_metrics(
         fn_mask_list = []
 
     for i in range(batch_size):
-        ground_truth_mask = np.transpose(batch_ground_truth[i], (1, 2, 0))
-        prediction_mask = np.transpose(batch_prediction[i], (1, 2, 0))
+        ground_truth_mask = batch_ground_truth[i]
+        prediction_mask = batch_prediction[i]
         result = compute_segmentation_average_precision_metrics(
-            ground_truth_mask, prediction_mask, iou_threshold, return_error_masks, remove_boundary_objects
+            ground_truth_mask,
+            prediction_mask, 
+            iou_threshold,
+            return_error_masks,
+            remove_boundary_objects
         )
         avg_precision_list.append(result['avg_precision'])
         tp_list.append(result['tp'])

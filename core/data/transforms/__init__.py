@@ -133,8 +133,8 @@ def get_test_transforms():
     """
     test_transforms = Compose(
         [
-            # Load image and label data in (H, W, C) format (image loaded as image-only; allow missing keys).
-            CustomLoadImaged(keys=["image", "mask"], allow_missing_keys=True, image_only=True),
+            # Load image and label data in (H, W, C) format (allow missing keys).
+            CustomLoadImaged(keys=["image", "mask"], allow_missing_keys=True, image_only=False),
             # Normalize the (H, W, C) image using the specified percentiles.
             CustomNormalizeImaged(
                 keys=["image"],
@@ -169,8 +169,8 @@ def get_predict_transforms():
     """
     pred_transforms = Compose(
         [
-            # Load the image data in (H, W, C) format (image loaded as image-only).
-            CustomLoadImage(image_only=True),
+            # Load the image data in (H, W, C) format.
+            CustomLoadImage(image_only=False),
             # Normalize the (H, W, C) image using the specified percentiles.
             CustomNormalizeImage(channel_wise=False, percentiles=[0.0, 99.5]),
             # Ensure the image is in channel-first format.

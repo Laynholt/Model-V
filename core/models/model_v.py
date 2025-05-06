@@ -19,7 +19,7 @@ class ModelVParams(BaseModel):
     decoder_channels: List[int] = [1024, 512, 256, 128, 64]    # Decoder configuration
     decoder_pab_channels: int = 256                            # Decoder Pyramid Attention Block channels
     in_channels: int = 3                                       # Number of input channels
-    out_classes: int = 3                                       # Number of output classes
+    out_classes: int = 1                                       # Number of output classes
     
     def asdict(self):
         """
@@ -38,6 +38,8 @@ class ModelV(MAnet):
     def __init__(self, params: ModelVParams) -> None:
         # Initialize the MAnet model with provided parameters
         super().__init__(**params.asdict())
+        
+        self.num_classes = params.out_classes
 
         # Remove the default segmentation head as it's not used in this architecture
         self.segmentation_head = None
@@ -53,12 +55,6 @@ class ModelV(MAnet):
         self.gradflow_head = DeepSegmentationHead(
             in_channels=params.decoder_channels[-1], out_channels=2 * params.out_classes
         )
-        
-        # self.gradflow_head = nn.ModuleList([
-        #     DeepSegmentationHead(
-        #         in_channels=params.decoder_channels[-1], out_channels=2
-        #     ) for _ in range(params.out_classes)
-        # ])
 
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -74,10 +70,6 @@ class ModelV(MAnet):
         cellprob_mask = self.cellprob_head(decoder_output)
         gradflow_mask = self.gradflow_head(decoder_output)
         
-        # gradflow_masks = torch.cat(
-        #     [head(decoder_output) for head in self.flow_heads], dim=1  # [B, 2*C, H, W]
-        # )
-
         # Concatenate the masks for output
         masks = torch.cat((gradflow_mask, cellprob_mask), dim=1)
 

@@ -10,6 +10,7 @@ class DatasetCommonConfig(BaseModel):
     seed: Optional[int] = 0          # Seed for splitting if data is not pre-split (and all random operations)
     device: str = "cuda0"           # Device used for training/testing (e.g., 'cpu' or 'cuda')
     use_tta: bool = False           # Flag to use Test-Time Augmentation (TTA)
+    use_amp: bool = False           # Flag to use Automatic Mixed Precision (AMP)
     predictions_dir: str = "."      # Directory to save predictions
 
     @model_validator(mode="after")
@@ -70,7 +71,6 @@ class DatasetTrainingConfig(BaseModel):
     batch_size: int = 1             # Batch size for training
     num_epochs: int = 100           # Number of training epochs
     val_freq: int = 1               # Frequency of validation during training
-    use_amp: bool = False           # Flag to use Automatic Mixed Precision (AMP)
     pretrained_weights: str = ""    # Path to pretrained weights for training
 
 

@@ -84,12 +84,12 @@ class BCE_MSE_Loss(BaseLoss):
   
         # Cell Recognition Loss
         cellprob_loss = self.bce_loss(
-            outputs[:, -self.num_classes:], target[:, self.num_classes:2 * self.num_classes].float()
+            outputs[:, -self.num_classes:], (target[:, -self.num_classes:] > 0).float()
         )
 
         # Cell Distinction Loss
         gradflow_loss = 0.5 * self.mse_loss(
-            outputs[:, :2 * self.num_classes], 5.0 * target[:, 2 * self.num_classes:]
+            outputs[:, :2 * self.num_classes], 5.0 * target[:, :2 * self.num_classes]
         )
 
         # Total loss
