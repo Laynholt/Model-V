@@ -37,27 +37,40 @@ class Config(BaseModel):
     optimizer: Optional[ComponentConfig] = None
     scheduler: Optional[ComponentConfig] = None
 
-    def save_json(self, file_path: str, indent: int = 4) -> None:
+    def asdict(self) -> Dict[str, Any]:
         """
-        Saves the configuration to a JSON file using dumps of each individual field.
-        
-        Args:
-            file_path (str): Destination path for the JSON file.
-            indent (int): Indentation level for the JSON file.
+        Produce a JSON‐serializable dict of this config, including nested
+        ComponentConfig and DatasetConfig entries. Useful for saving to file
+        or passing to experiment loggers (e.g. wandb.init(config=...)).
+
+        Returns:
+            A dict with keys 'model', 'dataset_config', and (if set)
+            'criterion', 'optimizer', 'scheduler'.
         """
-        config_dump = {
+        data: Dict[str, Any] = {
             "model": self.model.dump(),
-            "dataset_config": self.dataset_config.model_dump()
+            "dataset_config": self.dataset_config.model_dump(),
         }
         if self.criterion is not None:
-            config_dump["criterion"] = self.criterion.dump()
+            data["criterion"] = self.criterion.dump()
         if self.optimizer is not None:
-            config_dump["optimizer"] = self.optimizer.dump()
+            data["optimizer"] = self.optimizer.dump()
         if self.scheduler is not None:
-            config_dump["scheduler"] = self.scheduler.dump()
-        
+            data["scheduler"] = self.scheduler.dump()
+        return data
+
+
+    def save_json(self, file_path: str, indent: int = 4) -> None:
+        """
+        Save this config to a JSON file.
+
+        Args:
+            file_path: Path to write the JSON file.
+            indent: JSON indent level.
+        """
+        config_dict = self.asdict()
         with open(file_path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(config_dump, indent=indent))
+            f.write(json.dumps(config_dict, indent=indent))
 
 
     @classmethod

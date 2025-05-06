@@ -214,6 +214,34 @@ class DatasetTestingConfig(BaseModel):
         return self
 
 
+class WandbConfig(BaseModel):
+    """
+    Configuration for Weights & Biases logging.
+    """
+    use_wandb: bool = False            # Whether to enable WandB logging
+    project: Optional[str] = None      # WandB project name
+    entity: Optional[str] = None       # WandB entity (user or team)
+    name: Optional[str] = None         # Name of the run
+    tags: Optional[list[str]] = None   # List of tags for the run
+    notes: Optional[str] = None        # Notes or description for the run
+    save_code: bool = True             # Whether to save the code to WandB
+
+    @model_validator(mode="after")
+    def validate_wandb(cls) -> "WandbConfig":
+        if cls.use_wandb:
+            if not cls.project:
+                raise ValueError("When use_wandb=True, 'project' must be provided")
+            if not cls.entity:
+                raise ValueError("When use_wandb=True, 'entity' must be provided")
+        return cls
+    
+    def asdict(self) -> Dict[str, Any]:
+        """
+        Return a dict of all W&B parameters, excluding 'use_wandb' and any None values.
+        """
+        return self.model_dump(exclude_none=True, exclude={"use_wandb"})
+
+
 class DatasetConfig(BaseModel):
     """
     Main dataset configuration that groups fields into nested models for a structured and readable JSON.
@@ -222,6 +250,7 @@ class DatasetConfig(BaseModel):
     common: DatasetCommonConfig = DatasetCommonConfig()
     training: DatasetTrainingConfig = DatasetTrainingConfig()
     testing: DatasetTestingConfig = DatasetTestingConfig()
+    wandb: WandbConfig = WandbConfig()
 
     @model_validator(mode="after")
     def validate_config(self) -> "DatasetConfig":
@@ -256,11 +285,13 @@ class DatasetConfig(BaseModel):
             return {
                 "is_training": self.is_training,
                 "common": self.common.model_dump(),
-                "training": self.training.model_dump() if self.training else {}
+                "training": self.training.model_dump() if self.training else {},
+                "wandb": self.wandb.model_dump()
             }
         else:
             return {
                 "is_training": self.is_training,
                 "common": self.common.model_dump(),
-                "testing": self.testing.model_dump() if self.testing else {}
+                "testing": self.testing.model_dump() if self.testing else {},
+                "wandb": self.wandb.model_dump()
             }

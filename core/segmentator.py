@@ -592,6 +592,21 @@ class CellSegmentator:
             logger.info(f"   ├─ Ensemble model 1: {testing.ensemble_pretrained_weights1}")
             logger.info(f"   └─ Ensemble model 2: {testing.ensemble_pretrained_weights2}")
 
+        wandb_cfg = config.dataset_config.wandb
+        if wandb_cfg.use_wandb:
+            logger.info("[W&B]")
+            logger.info(f"├─ Project: {wandb_cfg.project}")
+            logger.info(f"├─ Entity:  {wandb_cfg.entity}")
+            if wandb_cfg.name:
+                logger.info(f"├─ Run name: {wandb_cfg.name}")
+            if wandb_cfg.tags:
+                logger.info(f"├─ Tags:     {', '.join(wandb_cfg.tags)}")
+            if wandb_cfg.notes:
+                logger.info(f"├─ Notes:    {wandb_cfg.notes}")
+            logger.info(f"└─ Save code: {'yes' if wandb_cfg.save_code else 'no'}")
+        else:
+            logger.info("[W&B] Logging disabled")
+
         logger.info("===================================")
 
 
@@ -705,7 +720,8 @@ class CellSegmentator:
             tablefmt="fancy_grid"
         )
         print(table, "\n")
-        wandb.log(results, step=step)
+        if self._dataset_setup.wandb.use_wandb:
+            wandb.log(results, step=step)
     
     
     def __run_epoch(self,
