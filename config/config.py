@@ -2,6 +2,7 @@ import json
 from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
+from .wandb_config import WandbConfig
 from .dataset_config import DatasetConfig
 
 
@@ -33,6 +34,7 @@ class ComponentConfig(BaseModel):
 class Config(BaseModel):
     model: ComponentConfig
     dataset_config: DatasetConfig
+    wandb_config: WandbConfig
     criterion: Optional[ComponentConfig] = None
     optimizer: Optional[ComponentConfig] = None
     scheduler: Optional[ComponentConfig] = None
@@ -57,6 +59,7 @@ class Config(BaseModel):
             data["optimizer"] = self.optimizer.dump()
         if self.scheduler is not None:
             data["scheduler"] = self.scheduler.dump()
+        data["wandb"] = self.wandb_config.model_dump()
         return data
 
 
@@ -88,8 +91,9 @@ class Config(BaseModel):
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        # Parse dataset_config using its Pydantic model.
+        # Parse dataset_config and wandb_config using its Pydantic model.
         dataset_config = DatasetConfig(**data.get("dataset_config", {}))
+        wandb_config = WandbConfig(**data.get("wandb", {}))
 
         # Helper function to parse registry fields.
         def parse_field(component_data: Dict[str, Any], registry_getter) -> Optional[ComponentConfig]:
@@ -119,5 +123,6 @@ class Config(BaseModel):
             dataset_config=dataset_config,
             criterion=parsed_criterion,
             optimizer=parsed_optimizer,
-            scheduler=parsed_scheduler
+            scheduler=parsed_scheduler,
+            wandb_config=wandb_config
         )

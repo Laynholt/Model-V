@@ -28,7 +28,7 @@ class BCELossParams(BaseModel):
         loss_kwargs = self.model_dump()
         if not self.with_logits:
             loss_kwargs.pop("pos_weight", None)  # Remove pos_weight if using BCELoss
-            loss_kwargs.pop("with_logits", None)
+        loss_kwargs.pop("with_logits", None)
         
         weight = loss_kwargs.get("weight")
         pos_weight = loss_kwargs.get("pos_weight")

@@ -11,6 +11,8 @@ from skimage import segmentation
 from scipy.optimize import linear_sum_assignment
 from typing import Dict, List, Tuple, Any, Union
 
+from core.logger import get_logger
+
 __all__ = [
     "compute_batch_segmentation_f1_metrics", "compute_batch_segmentation_average_precision_metrics",
     "compute_batch_segmentation_tp_fp_fn",
@@ -18,7 +20,9 @@ __all__ = [
     "compute_segmentation_tp_fp_fn",
     "compute_confusion_matrix", "compute_f1_score", "compute_average_precision_score"
 ]
-        
+
+logger = get_logger()
+  
 
 def compute_f1_score(
     true_positives: int,
@@ -92,7 +96,7 @@ def compute_confusion_matrix(
 
     # If no predictions were made, return zeros (with a printout for debugging).
     if num_predictions == 0:
-        print("No segmentation results!")
+        logger.warning("No segmentation results!")
         return 0, 0, 0
 
     # Compute the IoU matrix and ignore the background (first row and column).
@@ -586,7 +590,7 @@ def _process_instance_matching(
 
     # If no predictions are found, return with all ground truth as false negatives.
     if num_prediction == 0:
-        print("No segmentation results!")
+        logger.warning("No segmentation results!")
         result = {'tp': 0, 'fp': 0, 'fn': num_ground_truth}
         if return_masks:
             tp_mask = np.zeros_like(ground_truth_mask, dtype=np.uint8)

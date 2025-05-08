@@ -7,10 +7,11 @@ class DatasetCommonConfig(BaseModel):
     """
     Common configuration fields shared by both training and testing.
     """
-    seed: Optional[int] = 0          # Seed for splitting if data is not pre-split (and all random operations)
-    device: str = "cuda0"           # Device used for training/testing (e.g., 'cpu' or 'cuda')
+    seed: Optional[int] = 0         # Seed for splitting if data is not pre-split (and all random operations)
+    device: str = "cuda:0"           # Device used for training/testing (e.g., 'cpu' or 'cuda')
     use_tta: bool = False           # Flag to use Test-Time Augmentation (TTA)
     use_amp: bool = False           # Flag to use Automatic Mixed Precision (AMP)
+    masks_subdir: str = ""          # Subdirectory where the required masks are located, e.g. 'masks/cars'
     predictions_dir: str = "."      # Directory to save predictions
 
     @model_validator(mode="after")
@@ -62,8 +63,8 @@ class DatasetTrainingConfig(BaseModel):
     split: TrainingSplitInfo = TrainingSplitInfo()
 
     train_size: Union[int, float] = 0.7    # Training data size (int for static, float in (0,1] for dynamic)
-    valid_size: Union[int, float] = 0.2    # Validation data size (int for static, float in (0,1] for dynamic)
-    test_size: Union[int, float] = 0.1     # Testing data size (int for static, float in (0,1] for dynamic)
+    valid_size: Union[int, float] = 0.1    # Validation data size (int for static, float in (0,1] for dynamic)
+    test_size: Union[int, float] = 0.2     # Testing data size (int for static, float in (0,1] for dynamic)
     train_offset: int = 0           # Offset for training data
     valid_offset: int = 0           # Offset for validation data
     test_offset: int = 0            # Offset for testing data 
@@ -99,7 +100,7 @@ class DatasetTrainingConfig(BaseModel):
           - If is_split is False, validates split (all_data_dir must be non-empty and exist).
         """
         if any(isinstance(s, float) for s in (self.train_size, self.valid_size, self.test_size)):
-            if (self.train_size + self.valid_size + self.test_size) > 1:
+            if (self.train_size + self.valid_size + self.test_size) > 1 and not self.is_split:
                 raise ValueError("The total sample size with dynamically defined sizes must be <= 1")
         
         if not self.is_split:
@@ -214,34 +215,6 @@ class DatasetTestingConfig(BaseModel):
         return self
 
 
-class WandbConfig(BaseModel):
-    """
-    Configuration for Weights & Biases logging.
-    """
-    use_wandb: bool = False            # Whether to enable WandB logging
-    project: Optional[str] = None      # WandB project name
-    entity: Optional[str] = None       # WandB entity (user or team)
-    name: Optional[str] = None         # Name of the run
-    tags: Optional[list[str]] = None   # List of tags for the run
-    notes: Optional[str] = None        # Notes or description for the run
-    save_code: bool = True             # Whether to save the code to WandB
-
-    @model_validator(mode="after")
-    def validate_wandb(cls) -> "WandbConfig":
-        if cls.use_wandb:
-            if not cls.project:
-                raise ValueError("When use_wandb=True, 'project' must be provided")
-            if not cls.entity:
-                raise ValueError("When use_wandb=True, 'entity' must be provided")
-        return cls
-    
-    def asdict(self) -> Dict[str, Any]:
-        """
-        Return a dict of all W&B parameters, excluding 'use_wandb' and any None values.
-        """
-        return self.model_dump(exclude_none=True, exclude={"use_wandb"})
-
-
 class DatasetConfig(BaseModel):
     """
     Main dataset configuration that groups fields into nested models for a structured and readable JSON.
@@ -250,7 +223,6 @@ class DatasetConfig(BaseModel):
     common: DatasetCommonConfig = DatasetCommonConfig()
     training: DatasetTrainingConfig = DatasetTrainingConfig()
     testing: DatasetTestingConfig = DatasetTestingConfig()
-    wandb: WandbConfig = WandbConfig()
 
     @model_validator(mode="after")
     def validate_config(self) -> "DatasetConfig":
@@ -265,15 +237,11 @@ class DatasetConfig(BaseModel):
             if (self.training.is_split and self.training.pre_split.test_dir) or (not self.training.is_split):
                 if self.training.test_size > 0 and not self.common.predictions_dir:
                     raise ValueError("predictions_dir must be provided when test_size is non-zero")
-            if self.common.predictions_dir and not os.path.exists(self.common.predictions_dir):
-                raise ValueError(f"Path for predictions_dir does not exist: {self.common.predictions_dir}")
         else:
             if self.testing is None:
                 raise ValueError("Testing configuration must be provided when is_training is False")
             if self.testing.test_size > 0 and not self.common.predictions_dir:
                 raise ValueError("predictions_dir must be provided when test_size is non-zero")
-            if self.common.predictions_dir and not os.path.exists(self.common.predictions_dir):
-                raise ValueError(f"Path for predictions_dir does not exist: {self.common.predictions_dir}")
         return self
 
     def model_dump(self, **kwargs) -> Dict[str, Any]:
@@ -286,12 +254,10 @@ class DatasetConfig(BaseModel):
                 "is_training": self.is_training,
                 "common": self.common.model_dump(),
                 "training": self.training.model_dump() if self.training else {},
-                "wandb": self.wandb.model_dump()
             }
         else:
             return {
                 "is_training": self.is_training,
                 "common": self.common.model_dump(),
                 "testing": self.testing.model_dump() if self.testing else {},
-                "wandb": self.wandb.model_dump()
             }

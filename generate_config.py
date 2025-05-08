@@ -1,8 +1,7 @@
 import os
 from typing import Tuple
 
-from config.config import *
-from config.dataset_config import DatasetConfig
+from config import Config, WandbConfig, DatasetConfig, ComponentConfig
 
 from core import (
     ModelRegistry, CriterionRegistry, OptimizerRegistry, SchedulerRegistry
@@ -47,7 +46,8 @@ def main():
     if is_training is False:
         config = Config(
             model=ComponentConfig(name=chosen_model, params=model_instance),
-            dataset_config=dataset_config
+            dataset_config=dataset_config,
+            wandb_config=WandbConfig()
         )
         
         # Construct a base filename from the selected registry names.
@@ -76,6 +76,7 @@ def main():
         config = Config(
             model=ComponentConfig(name=chosen_model, params=model_instance),
             dataset_config=dataset_config,
+            wandb_config=WandbConfig(),
             criterion=ComponentConfig(name=chosen_criterion, params=criterion_instance),
             optimizer=ComponentConfig(name=chosen_optimizer, params=optimizer_instance),
             scheduler=ComponentConfig(name=chosen_scheduler, params=scheduler_instance)

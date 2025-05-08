@@ -1,11 +1,16 @@
 import copy
+import torch
 import numpy as np
 from typing import Dict, Sequence, Tuple, Union
 from skimage.segmentation import find_boundaries
 from monai.transforms import RandScaleIntensity, Compose, MapTransform # type: ignore
 
+import logging
 
 __all__ = ["BoundaryExclusion", "IntensityDiversification"]
+
+
+logger = logging.getLogger("cell_aware")
 
 
 class BoundaryExclusion(MapTransform):
@@ -164,7 +169,8 @@ class IntensityDiversification(MapTransform):
 
             # If there are no unique cell objects in this channel, raise an exception.
             if cell_ids.size == 0:
-                raise ValueError(f"No unique objects found in the label mask for channel {c}")
+                logger.warning(f"No unique objects found in the label mask for channel {c}")
+                continue
 
             # Determine the number of cells to modify using the change_cell_ratio.
             change_count = int(len(cell_ids) * self.change_cell_ratio)
@@ -175,7 +181,10 @@ class IntensityDiversification(MapTransform):
             # Create a binary mask for the current channel:
             # - Pixels corresponding to the selected cell IDs are set to 1.
             # - All other pixels are set to 0.
-            mask = np.isin(channel_label, selected).astype(np.float32)
+            mask_np = np.isin(channel_label, selected).astype(np.float32)
+
+            # Convert mask to same dtype and device
+            mask = torch.from_numpy(mask_np).to(dtype=torch.float32, device=channel_label.device)
 
             # Separate the image channel into two components:
             # 1. img_orig: The portion of the image that remains unchanged.
@@ -183,8 +192,11 @@ class IntensityDiversification(MapTransform):
             img_orig = (1 - mask) * img_channel
             img_changed = mask * img_channel
 
+            # Add a channel dimension for RandScaleIntensity: (1, H, W)
+            img_changed = img_changed.unsqueeze(0)
             # Apply a random intensity scaling transformation to the selected regions.
             img_changed = self.randscale_intensity(img_changed)
+            img_changed = img_changed.squeeze(0)  # type: ignore # back to shape (H, W)
 
             # Combine the unchanged and modified parts to update the image channel.
             data["image"][c] = img_orig + img_changed

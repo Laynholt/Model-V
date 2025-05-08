@@ -169,16 +169,21 @@ def get_predict_transforms():
     """
     pred_transforms = Compose(
         [
-            # Load the image data in (H, W, C) format.
-            CustomLoadImage(image_only=False),
+            # Load image data in (H, W, C) format (allow missing keys).
+            CustomLoadImaged(keys=["image"], allow_missing_keys=True, image_only=False),
             # Normalize the (H, W, C) image using the specified percentiles.
-            CustomNormalizeImage(channel_wise=False, percentiles=[0.0, 99.5]),
-            # Ensure the image is in channel-first format.
-            EnsureChannelFirst(channel_dim=-1),  # image shape: (C, H, W)
+            CustomNormalizeImaged(
+                keys=["image"],
+                allow_missing_keys=True,
+                channel_wise=False,
+                percentiles=[0.0, 99.5],
+            ),
+            # Ensure image is in channel-first format.
+            EnsureChannelFirstd(keys=["image"], allow_missing_keys=True, channel_dim=-1),
             # Scale image intensities.
-            ScaleIntensity(),
-            # Convert the image to the required tensor type.
-            EnsureType(data_type="tensor"),
+            ScaleIntensityd(keys=["image"], allow_missing_keys=True),
+            # Ensure that the data types are correct.
+            EnsureTyped(keys=["image"], allow_missing_keys=True),
         ]
     )
     return pred_transforms

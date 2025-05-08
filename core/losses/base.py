@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 from monai.metrics.cumulative_average import CumulativeAverage
 
 
-class BaseLoss(abc.ABC):
+class BaseLoss(nn.Module, abc.ABC):
     """Custom loss function combining BCEWithLogitsLoss and MSE losses for cell recognition and distinction."""
 
     def __init__(self, params: Optional[BaseModel] = None):
