@@ -5,12 +5,12 @@ from typing import Dict, Sequence, Tuple, Union
 from skimage.segmentation import find_boundaries
 from monai.transforms import RandScaleIntensity, Compose, MapTransform # type: ignore
 
-import logging
+from core.logger import get_logger
 
 __all__ = ["BoundaryExclusion", "IntensityDiversification"]
 
 
-logger = logging.getLogger("cell_aware")
+logger = get_logger("cell_aware")
 
 
 class BoundaryExclusion(MapTransform):

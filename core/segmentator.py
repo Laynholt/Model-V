@@ -1270,19 +1270,19 @@ class CellSegmentator:
             # Use provided start_index when metadata missing
             base_name = f"prediction_{start_index:04d}"
 
+        # Save mask TIFF (16-bit)
+        mask_filename = f"{base_name}_mask.tif"
+        mask_path = os.path.join(masks_dir, mask_filename)
+        tiff.imwrite(mask_path, pred_array.astype(np.uint16), compression="zlib")
+
        # Now pred_array shape is (C, H, W)
         num_channels = pred_array.shape[0]
         for channel_idx in range(num_channels):
             channel_mask = pred_array[channel_idx]
 
             # File names
-            mask_filename = f"{base_name}_ch{channel_idx:01d}.tif"
             plot_filename = f"{base_name}_ch{channel_idx:01d}.png"
-            mask_path = os.path.join(masks_dir, mask_filename)
             plot_path = os.path.join(plots_dir, plot_filename)
-
-            # Save mask TIFF (16-bit)
-            tiff.imwrite(mask_path, channel_mask.astype(np.uint16), compression="zlib")
 
             # Extract corresponding true mask channel if exists
             true_mask = None
