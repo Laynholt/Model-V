@@ -943,19 +943,20 @@ class CellSegmentator:
                             predicted_masks=preds,
                             ground_truth_masks=labels_post, # type: ignore
                             iou_threshold=0.5,
-                            return_error_masks=(mode == "test") and save_results is True
+                            return_error_masks=(mode == "test") and save_results is True and not only_masks
                         )
                         all_tp.append(tp)
                         all_fp.append(fp)
                         all_fn.append(fn)
                         
                         if mode == "test" and save_results is True:
+                            masks = (tp_masks, fp_masks, fn_masks) if not only_masks else None
                             self.__save_prediction_masks(
                                 sample=batch,
                                 predicted_mask=preds,
                                 start_index=batch_counter,
                                 only_masks=only_masks,
-                                masks=(tp_masks, fp_masks, fn_masks) # type: ignore
+                                masks=masks # type: ignore
                             )
 
                 # Backpropagation and optimizer step in training

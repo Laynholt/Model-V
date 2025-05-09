@@ -64,7 +64,7 @@ class ModelV(MAnet):
 
         # Encode the input and then decode it
         features = self.encoder(x)
-        decoder_output = self.decoder(*features)
+        decoder_output = self.decoder(features)
 
         # Generate masks for cell probability and gradient flows
         cellprob_mask = self.cellprob_head(decoder_output)
