@@ -1,11 +1,15 @@
 # Cell Segmentator
 
+---
+
 ## Overview
 
 This repository provides two main scripts to configure and run a cell segmentation workflow:
 
 * **generate\_config.py**: Interactive script to create JSON configuration files for training or prediction.
 * **main.py**: Entry point to train, test, or predict using the generated configuration.
+
+---
 
 ## Installation
 
@@ -39,6 +43,8 @@ Follow the official guide at [https://docs.astral.sh/uv/](https://docs.astral.sh
    ```bash
    uv sync
    ```
+
+---
 
 ## Dataset Structure
 
@@ -75,6 +81,8 @@ In this case, set the `masks_subdir` field in your dataset configuration to the 
 
 **Mask format**: Instance masks should be provided for multi-label segmentation with channel-last ordering, i.e., each mask array must have shape `(H, W, C)`.
 
+---
+
 ## generate\_config.py
 
 This script guides you through creating a JSON configuration for either training or prediction.
@@ -101,6 +109,8 @@ Generated config includes sections:
 * `wandb_config`: Weights & Biases integration settings
 * *(If training)* `criterion`, `optimizer`, `scheduler`
 
+---
+
 ## main.py
 
 Entrypoint to run training, testing, or prediction using a config file.
@@ -124,6 +134,8 @@ python main.py [-c CONFIG] [-m {train,test,predict}] [--no-save-masks] [--only-m
 4. **Print** dataset info for the first batch.
 5. **Run** training or inference (`.run()`).
 6. **Save** model checkpoint and upload to W\&B if in training mode.
+
+---
 
 ## Configurable Parameters
 
@@ -155,6 +167,8 @@ A brief overview of the key parameters you can adjust in your JSON config:
 
 > **Batch size note:** Validation, testing, and prediction runs always use a batch size of `1`, regardless of the `batch_size` setting in the training configuration.
 
+---
+
 ## Examples
 
 ### Generate a training config
@@ -178,3 +192,10 @@ python main.py -c config/templates/predict/YourConfig.json -m predict
 ```
 
 ---
+
+## Acknowledgments
+
+This project was developed building upon the following open-source repositories:
+
+* [Cellpose](https://github.com/MouseLand/cellpose) by the MouseLand Lab.
+* [MEDIAR](https://github.com/Lee-Gihun/MEDIAR) by Lee Gihun.

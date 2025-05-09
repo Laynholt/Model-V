@@ -1,7 +1,6 @@
 """
-Adapted from:
-[1] https://github.com/JunMa11/NeurIPS-CellSeg/blob/main/baseline/compute_metric.py
-[2] https://github.com/stardist/stardist/blob/master/stardist/matching.py
+This code is adapted from the following codes:
+[1] https://github.com/Lee-Gihun/MEDIAR/blob/main/train_tools/measures.py
 """
 
 import numpy as np

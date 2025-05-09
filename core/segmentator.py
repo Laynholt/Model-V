@@ -1,3 +1,12 @@
+"""
+This code is adapted from the following codes:
+[1] https://github.com/MouseLand/cellpose/blob/main/cellpose/utils.py
+[2] https://github.com/MouseLand/cellpose/blob/main/cellpose/dynamics.py
+[3] https://github.com/MouseLand/cellpose/blob/main/cellpose/metrics.py
+[4] https://github.com/Lee-Gihun/MEDIAR/tree/main/core
+[5] https://github.com/Lee-Gihun/MEDIAR/tree/main/core/MEDIAR
+"""
+
 import random
 import numpy as np
 from numba import njit, prange
