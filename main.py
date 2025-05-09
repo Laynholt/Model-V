@@ -64,6 +64,10 @@ def main():
         test_transforms=get_test_transforms() if mode in ("train", "test") else None,
         predict_transforms=get_predict_transforms() if mode == "predict" else None
     )
+    
+    segmentator.print_data_info(
+        loader_type=mode, index=0
+    )
 
     # Watch parameters & gradients of model
     if config.wandb_config.use_wandb:
