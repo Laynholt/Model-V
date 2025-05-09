@@ -13,7 +13,7 @@ __all__ = [
 ]
 
 
-def get_train_transforms():
+def get_train_transforms(roi_size: int = 512):
     """
     Returns the transformation pipeline for training data.
 
@@ -27,6 +27,9 @@ def get_train_transforms():
       7. Apply additional intensity perturbations (noise, contrast, smoothing, histogram shift, and sharpening).
       8. Convert the data types to the desired format.
 
+    Args:
+        roi_size (int):
+            The size of the square window for cropping. (Default 512).
     Returns:
         Compose: The composed transformation pipeline for training.
     """
@@ -55,9 +58,9 @@ def get_train_transforms():
                 keep_size=False,
             ),
             # Pad spatial dimensions to ensure a size of 512.
-            SpatialPadd(keys=["image", "mask"], spatial_size=512),
+            SpatialPadd(keys=["image", "mask"], spatial_size=roi_size),
             # Randomly crop a region of interest of size 512.
-            RandSpatialCropd(keys=["image", "mask"], roi_size=512, random_size=False),
+            RandSpatialCropd(keys=["image", "mask"], roi_size=roi_size, random_size=False),
             # Randomly flip the image and label along an axis.
             RandAxisFlipd(keys=["image", "mask"], prob=0.5),
             # Randomly rotate the image and label by 90 degrees.

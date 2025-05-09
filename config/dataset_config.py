@@ -70,6 +70,7 @@ class DatasetTrainingConfig(BaseModel):
     test_offset: int = 0            # Offset for testing data 
 
     batch_size: int = 1             # Batch size for training
+    roi_size: int = 512             # The size of the square window for cropping
     num_epochs: int = 100           # Number of training epochs
     val_freq: int = 1               # Frequency of validation during training
 
@@ -123,11 +124,14 @@ class DatasetTrainingConfig(BaseModel):
         """
         Validates numeric fields:
         - batch_size and num_epochs must be > 0.
+        - roi_size must be > 0.
         - val_freq must be >= 0.
         - offsets must be >= 0.
         """
         if self.batch_size <= 0:
             raise ValueError("batch_size must be > 0")
+        if self.roi_size <= 0:
+            raise ValueError("roi_size must be > 0")
         if self.num_epochs <= 0:
             raise ValueError("num_epochs must be > 0")
         if self.val_freq < 0:

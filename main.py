@@ -59,7 +59,8 @@ def main():
 
     segmentator = CellSegmentator(config)
     segmentator.create_dataloaders(
-        train_transforms=get_train_transforms() if mode == "train" else None,
+        train_transforms=get_train_transforms(
+            roi_size=config.dataset_config.training.roi_size) if mode == "train" else None,
         valid_transforms=get_valid_transforms() if mode == "train" else None,
         test_transforms=get_test_transforms() if mode in ("train", "test") else None,
         predict_transforms=get_predict_transforms() if mode == "predict" else None
