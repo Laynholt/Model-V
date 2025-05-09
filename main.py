@@ -24,17 +24,16 @@ def main():
         help='Run mode: train, test or predict'
     )
     parser.add_argument(
-        '-s', '--save-masks',
-        action='store_true',
-        default=True,
-        help='If set to False, do not save predicted masks; by default, saving is enabled'
+        '--no-save-masks',
+        action='store_false',
+        dest='save_masks',
+        help='If set, do NOT save predicted masks (saving is enabled by default)'
     )
     parser.add_argument(
         '--only-masks',
         action='store_true',
-        default=False,
         help=('If set and save-masks set, save only the raw predicted'
-              ' masks without additional visualizations or metrics')
+              ' masks without additional visualizations')
     )
 
     args = parser.parse_args()

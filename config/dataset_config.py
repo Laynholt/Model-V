@@ -9,7 +9,6 @@ class DatasetCommonConfig(BaseModel):
     """
     seed: Optional[int] = 0         # Seed for splitting if data is not pre-split (and all random operations)
     device: str = "cuda:0"          # Device used for training/testing (e.g., 'cpu' or 'cuda')
-    use_tta: bool = False           # Flag to use Test-Time Augmentation (TTA)
     use_amp: bool = False           # Flag to use Automatic Mixed Precision (AMP)
     masks_subdir: str = ""          # Subdirectory where the required masks are located, e.g. 'masks/cars'
     predictions_dir: str = "."      # Directory to save predictions
