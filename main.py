@@ -23,6 +23,20 @@ def main():
         default='train',
         help='Run mode: train, test or predict'
     )
+    parser.add_argument(
+        '-s', '--save-masks',
+        action='store_true',
+        default=True,
+        help='If set to False, do not save predicted masks; by default, saving is enabled'
+    )
+    parser.add_argument(
+        '--only-masks',
+        action='store_true',
+        default=False,
+        help=('If set and save-masks set, save only the raw predicted'
+              ' masks without additional visualizations or metrics')
+    )
+
     args = parser.parse_args()
 
     mode = args.mode
@@ -56,22 +70,25 @@ def main():
     if config.wandb_config.use_wandb:
         wandb.watch(segmentator._model, log="all", log_graph=True)
 
-    # Run training (or prediction, if implemented)
-    segmentator.run()
+    try:
+        segmentator.run(save_results=args.save_masks, only_masks=args.only_masks)
+    except Exception:
+        raise
+    finally:
+        if config.dataset_config.is_training:
+            # Prepare saving path
+            weights_dir = (
+                wandb.run.dir if config.wandb_config.use_wandb else "weights" # type: ignore
+            )
+            saving_path = os.path.join(
+                weights_dir,
+                os.path.basename(config.dataset_config.common.predictions_dir) + '.pth'
+            )
+            segmentator.save_checkpoint(saving_path)
 
-    if config.dataset_config.is_training:
-        # Prepare saving path
-        weights_dir = (
-            wandb.run.dir if config.wandb_config.use_wandb else "weights" # type: ignore
-        )
-        saving_path = os.path.join(
-            weights_dir,
-            os.path.basename(config.dataset_config.common.predictions_dir) + '.pth'
-        )
-        segmentator.save_checkpoint(saving_path)
+            if config.wandb_config.use_wandb:
+                wandb.save(saving_path)
 
-        if config.wandb_config.use_wandb:
-            wandb.save(saving_path)
 
 
 if __name__ == "__main__":

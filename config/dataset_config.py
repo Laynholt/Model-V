@@ -8,11 +8,12 @@ class DatasetCommonConfig(BaseModel):
     Common configuration fields shared by both training and testing.
     """
     seed: Optional[int] = 0         # Seed for splitting if data is not pre-split (and all random operations)
-    device: str = "cuda:0"           # Device used for training/testing (e.g., 'cpu' or 'cuda')
+    device: str = "cuda:0"          # Device used for training/testing (e.g., 'cpu' or 'cuda')
     use_tta: bool = False           # Flag to use Test-Time Augmentation (TTA)
     use_amp: bool = False           # Flag to use Automatic Mixed Precision (AMP)
     masks_subdir: str = ""          # Subdirectory where the required masks are located, e.g. 'masks/cars'
     predictions_dir: str = "."      # Directory to save predictions
+    pretrained_weights: str = ""    # Path to pretrained weights
 
     @model_validator(mode="after")
     def validate_common(self) -> "DatasetCommonConfig":
@@ -39,7 +40,7 @@ class TrainingPreSplitInfo(BaseModel):
     Contains:
         - train_dir, valid_dir, test_dir: Directories for training, validation, and testing data.
     """
-    train_dir: str = "."             # Directory for training data if data is pre-split
+    train_dir: str = "."            # Directory for training data if data is pre-split
     valid_dir: str = ""             # Directory for validation data if data is pre-split
     test_dir: str = ""              # Directory for testing data if data is pre-split
 
@@ -72,7 +73,6 @@ class DatasetTrainingConfig(BaseModel):
     batch_size: int = 1             # Batch size for training
     num_epochs: int = 100           # Number of training epochs
     val_freq: int = 1               # Frequency of validation during training
-    pretrained_weights: str = ""    # Path to pretrained weights for training
 
 
     @field_validator("train_size", "valid_size", "test_size", mode="before")
@@ -137,15 +137,6 @@ class DatasetTrainingConfig(BaseModel):
             raise ValueError("offsets must be >= 0")
         return self
 
-    @model_validator(mode="after")
-    def validate_pretrained(self) -> "DatasetTrainingConfig":
-        """
-        Validates that pretrained_weights is provided and exists.
-        """
-        if self.pretrained_weights and not os.path.exists(self.pretrained_weights):
-            raise ValueError(f"Path for pretrained_weights does not exist: {self.pretrained_weights}")
-        return self
-
 
 class DatasetTestingConfig(BaseModel):
     """
@@ -155,11 +146,6 @@ class DatasetTestingConfig(BaseModel):
     test_size: Union[int, float] = 1.0     # Testing data size (int for static, float in (0,1] for dynamic)
     test_offset: int = 0                # Offset for testing data 
     shuffle: bool = True                # Shuffle data
-    
-    use_ensemble: bool = False          # Flag to use ensemble mode in testing
-    ensemble_pretrained_weights1: str = "."
-    ensemble_pretrained_weights2: str = "."
-    pretrained_weights: str = "."
 
     @field_validator("test_size", mode="before")
     def validate_test_size(cls, v: Union[int, float]) -> Union[int, float]:
@@ -191,25 +177,11 @@ class DatasetTestingConfig(BaseModel):
         """
         Validates the testing configuration:
         - test_dir must be non-empty and exist.
-        - If use_ensemble is True, both ensemble_pretrained_weights1 and ensemble_pretrained_weights2 must be provided and exist.
-        - If use_ensemble is False, pretrained_weights must be provided and exist.
         """
         if not self.test_dir:
             raise ValueError("In testing configuration, test_dir must be provided and non-empty")
         if not os.path.exists(self.test_dir):
             raise ValueError(f"Path for test_dir does not exist: {self.test_dir}")
-        if self.use_ensemble:
-            for field in ["ensemble_pretrained_weights1", "ensemble_pretrained_weights2"]:
-                value = getattr(self, field)
-                if not value:
-                    raise ValueError(f"When use_ensemble is True, {field} must be provided and non-empty")
-                if not os.path.exists(value):
-                    raise ValueError(f"Path for {field} does not exist: {value}")
-        else:
-            if not self.pretrained_weights:
-                raise ValueError("When use_ensemble is False, pretrained_weights must be provided and non-empty")
-            if not os.path.exists(self.pretrained_weights):
-                raise ValueError(f"Path for pretrained_weights does not exist: {self.pretrained_weights}")
         if self.test_offset < 0:
             raise ValueError("test_offset must be >= 0")
         return self
@@ -237,11 +209,17 @@ class DatasetConfig(BaseModel):
             if (self.training.is_split and self.training.pre_split.test_dir) or (not self.training.is_split):
                 if self.training.test_size > 0 and not self.common.predictions_dir:
                     raise ValueError("predictions_dir must be provided when test_size is non-zero")
+            if self.common.pretrained_weights and not os.path.exists(self.common.pretrained_weights):
+                raise ValueError(f"Path for pretrained_weights does not exist: {self.common.pretrained_weights}")
         else:
             if self.testing is None:
                 raise ValueError("Testing configuration must be provided when is_training is False")
             if self.testing.test_size > 0 and not self.common.predictions_dir:
                 raise ValueError("predictions_dir must be provided when test_size is non-zero")
+            if not self.common.pretrained_weights:
+                raise ValueError("When testing pretrained_weights must be provided and non-empty")
+            if not os.path.exists(self.common.pretrained_weights):
+                raise ValueError(f"Path for pretrained_weights does not exist: {self.common.pretrained_weights}")
         return self
 
     def model_dump(self, **kwargs) -> Dict[str, Any]:

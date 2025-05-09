@@ -21,7 +21,7 @@ __all__ = [
     "compute_confusion_matrix", "compute_f1_score", "compute_average_precision_score"
 ]
 
-logger = get_logger()
+logger = get_logger(__name__)
   
 
 def compute_f1_score(

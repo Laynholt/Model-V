@@ -10,7 +10,7 @@ from core.logger import get_logger
 __all__ = ["BoundaryExclusion", "IntensityDiversification"]
 
 
-logger = get_logger("cell_aware")
+logger = get_logger(__name__)
 
 
 class BoundaryExclusion(MapTransform):
