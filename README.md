@@ -52,32 +52,35 @@ Your data directory must follow this hierarchy:
 
 ```
 path_to_data_folder/
-├── images/        # Input images
+├── images/        # Input images (any supported format)
 │   ├── img1.tif
-│   ├── img2.tif
-│   └── ...
-└── masks/         # Ground-truth instance masks
+│   ├── img2.png
+│   └── …
+└── masks/         # Ground-truth instance masks (any supported format)
     ├── mask1.tif
-    ├── mask2.tif
-    └── ...
+    ├── mask2.jpg
+    └── …
 ```
 
 If your dataset contains multiple classes (e.g., class A and B) and you prefer not to duplicate images, you can organize masks into class-specific subdirectories:
 
 ```
 path_to_data_folder/
-├── images/
-│   └── img1.tif
+├── images/        # Input images (any supported format)
+│   └── img1.bmp
 └── masks/
-    ├── A/      # Masks for class A
-    │   ├── img1_mask.tif
-    │   └── ...
-    └── B/      # Masks for class B
-        ├── img1_mask.tif
-        └── ...
+    ├── A/         # Masks for class A (any supported format)
+    │   ├── img1_mask.png
+    │   └── …
+    └── B/         # Masks for class B (any supported format)
+        ├── img1_mask.jpeg
+        └── …
 ```
 
 In this case, set the `masks_subdir` field in your dataset configuration to the name of the mask subdirectory (e.g., `"A"` or `"B"`).
+
+**Supported file formats**: Image and mask files can have any of these extensions:
+`tif`, `tiff`, `png`, `jpg`, `bmp`, `jpeg`.
 
 **Mask format**: Instance masks should be provided for multi-label segmentation with channel-last ordering, i.e., each mask array must have shape `(H, W, C)`.
 

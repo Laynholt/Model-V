@@ -1,7 +1,7 @@
 import numpy as np
 import tifffile as tif
 import skimage.io as io
-from typing import List, Optional, Sequence, Type, Union
+from typing import Final, List, Optional, Sequence, Type, Union
 
 from monai.utils.enums import PostFix
 from monai.utils.module import optional_import
@@ -24,7 +24,10 @@ __all__ = [
     "CustomLoadImaged",        # Dictionary-based image loader
     "CustomLoadImageD",        # Dictionary-based image loader
     "CustomLoadImageDict",     # Dictionary-based image loader
+    "SUPPORTED_IMAGE_FORMATS"
 ]
+
+SUPPORTED_IMAGE_FORMATS: Final[Sequence[str]] = ["tif", "tiff", "png", "jpg", "bmp", "jpeg"]
 
 
 class CustomLoadImage(LoadImage):
@@ -150,8 +153,7 @@ class UniversalImageReader(NumpyReader):
         
         Supported extensions: tif, tiff, png, jpg, bmp, jpeg.
         """
-        suffixes: Sequence[str] = ["tif", "tiff", "png", "jpg", "bmp", "jpeg"]
-        return has_itk or is_supported_format(filename, suffixes)
+        return has_itk or is_supported_format(filename, SUPPORTED_IMAGE_FORMATS)
 
     def read(self, data: Union[Sequence[PathLike], PathLike], **kwargs):
         """

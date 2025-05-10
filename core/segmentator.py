@@ -38,6 +38,7 @@ import csv
 import copy
 import time
 import tifffile as tiff
+from itertools import chain
 
 from pprint import pformat
 from tabulate import tabulate
@@ -56,6 +57,7 @@ from core.utils import (
     compute_f1_score,
     compute_average_precision_score
 )
+from core.data.transforms.load_image import SUPPORTED_IMAGE_FORMATS
 
 from core.logger import get_logger
 
@@ -749,8 +751,9 @@ class CellSegmentator:
         """
         # Collect sorted list of image paths
         images = sorted(
-            glob.glob(os.path.join(images_dir, '*.tif')) +
-            glob.glob(os.path.join(images_dir, '*.tiff'))
+            chain(glob.glob(
+                os.path.join(images_dir, f'*.{ext}')) for ext in SUPPORTED_IMAGE_FORMATS
+            )
         )
         if not images:
             raise FileNotFoundError(f"No images found in path or pattern: '{images_dir}'")
@@ -758,8 +761,9 @@ class CellSegmentator:
         if masks_dir is not None:
             # Collect and validate sorted list of mask paths
             masks = sorted(
-                glob.glob(os.path.join(masks_dir, '*.tif')) +
-                glob.glob(os.path.join(masks_dir, '*.tiff'))
+                chain(glob.glob(
+                    os.path.join(masks_dir, f'*.{ext}')) for ext in SUPPORTED_IMAGE_FORMATS
+                )
             )
             if len(images) != len(masks):
                 raise ValueError(f"Number of masks ({len(masks)}) does not match number of images ({len(images)})")
@@ -1031,7 +1035,7 @@ class CellSegmentator:
             # Use sliding window inference for non-training phases
             outputs = sliding_window_inference(
                 inputs,
-                roi_size=512,
+                roi_size=self._dataset_setup.common.roi_size,
                 sw_batch_size=4,
                 predictor=self._model,
                 padding_mode="constant",
