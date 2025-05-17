@@ -1,6 +1,8 @@
-from .base import *
-from typing import List, Literal, Union
+from .base import BaseLoss
+import torch
+from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
+from monai.metrics.cumulative_average import CumulativeAverage
 
 
 class CrossEntropyLossParams(BaseModel):
@@ -9,17 +11,17 @@ class CrossEntropyLossParams(BaseModel):
     """
     model_config = ConfigDict(frozen=True)
     
-    weight: Optional[List[Union[int, float]]] = None
+    weight: list[int | float] | None = None
     ignore_index: int = -100
     reduction: Literal["none", "mean", "sum"] = "mean"
     label_smoothing: float = 0.0
     
-    def asdict(self):
+    def asdict(self) -> dict[str, Any]:
         """
         Returns a dictionary of valid parameters for `nn.CrossEntropyLoss`.
 
         Returns:
-            Dict[str, Any]: Dictionary of parameters for nn.CrossEntropyLoss.
+            dict(str, Any): Dictionary of parameters for nn.CrossEntropyLoss.
         """
         loss_kwargs = self.model_dump()
         
@@ -36,18 +38,18 @@ class CrossEntropyLoss(BaseLoss):
     Custom loss function wrapper for `nn.CrossEntropyLoss` with tracking of loss metrics.
     """
 
-    def __init__(self, params: Optional[CrossEntropyLossParams] = None):
+    def __init__(self, params: CrossEntropyLossParams | None = None) -> None:
         """
         Initializes the loss function with optional CrossEntropyLoss parameters.
 
         Args:
-            params (Optional[Dict[str, Any]]): Parameters for nn.CrossEntropyLoss (default: None).
+            params (CrossEntropyLossParams | None): Parameters for nn.CrossEntropyLoss (default: None).
         """
         super().__init__(params=params)
         _ce_params = params.asdict() if params is not None else {}
         
         # Initialize loss functions with user-provided parameters or PyTorch defaults
-        self.ce_loss = nn.CrossEntropyLoss(**_ce_params)
+        self.ce_loss = torch.nn.CrossEntropyLoss(**_ce_params)
         
         # Using CumulativeAverage from MONAI to track loss metrics
         self.loss_ce_metric = CumulativeAverage()
@@ -78,18 +80,18 @@ class CrossEntropyLoss(BaseLoss):
         return loss
 
 
-    def get_loss_metrics(self) -> Dict[str, float]:
+    def get_loss_metrics(self) -> dict[str, float]:
         """
         Retrieves the tracked loss metrics.
 
         Returns:
-            Dict[str, float]: A dictionary containing the average CrossEntropy loss.
+            dict(str, float): A dictionary containing the average CrossEntropy loss.
         """
         return {
             "loss": round(self.loss_ce_metric.aggregate().item(), 4),
         }
 
 
-    def reset_metrics(self):
+    def reset_metrics(self) -> None:
         """Resets the stored loss metrics."""
         self.loss_ce_metric.reset()

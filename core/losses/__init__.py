@@ -1,4 +1,4 @@
-from typing import Dict, Final, Tuple, Type, List, Any, Union
+from typing import Final, Type, Any
 from pydantic import BaseModel
 
 from .base import BaseLoss
@@ -16,7 +16,7 @@ __all__ = [
 class CriterionRegistry:
     """Registry of loss functions and their parameter classes with case-insensitive lookup."""
     
-    __CRITERIONS: Final[Dict[str, Dict[str, Any]]] = {
+    __CRITERIONS: Final[dict[str, dict[str, Any]]] = {
         "CrossEntropyLoss": {
             "class": CrossEntropyLoss,
             "params": CrossEntropyLossParams,
@@ -36,7 +36,7 @@ class CriterionRegistry:
     }
     
     @classmethod
-    def __get_entry(cls, name: str) -> Dict[str, Any]:
+    def __get_entry(cls, name: str) -> dict[str, Any]:
         """
         Private method to retrieve the criterion entry from the registry using case-insensitive lookup.
         
@@ -44,7 +44,7 @@ class CriterionRegistry:
             name (str): The name of the loss function.
         
         Returns:
-            Dict[str, Any]: A dictionary containing the keys 'class' and 'params'.
+            dict(str, Any): A dictionary containing the keys 'class' and 'params'.
         
         Raises:
             ValueError: If the loss function is not found.
@@ -67,7 +67,7 @@ class CriterionRegistry:
             name (str): Name of the loss function.
         
         Returns:
-            Type[BaseLoss]: The loss function class.
+            Type(BaseLoss): The loss function class.
         """
         entry = cls.__get_entry(name)
         return entry["class"]
@@ -81,17 +81,17 @@ class CriterionRegistry:
             name (str): Name of the loss function.
         
         Returns:
-            Type[BaseModel]: The loss function parameter class.
+            Type(BaseModel): The loss function parameter class.
         """
         entry = cls.__get_entry(name)
         return entry["params"]
     
     @classmethod
-    def get_available_criterions(cls) -> Tuple[str, ...]:
+    def get_available_criterions(cls) -> tuple[str, ...]:
         """
         Returns a tuple of available loss function names in their original case.
         
         Returns:
-            Tuple[str]: Tuple of available loss function names.
+            tuple(str): Tuple of available loss function names.
         """
         return tuple(cls.__CRITERIONS.keys())

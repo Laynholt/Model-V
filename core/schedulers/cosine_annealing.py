@@ -1,10 +1,9 @@
-from typing import Any, Dict
-from pydantic import BaseModel, ConfigDict
-from torch import optim
-from torch.optim.lr_scheduler import CosineAnnealingLR
-
 from .base import BaseScheduler
 
+from typing import Any
+from torch import optim
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from pydantic import BaseModel, ConfigDict
 
 
 class CosineAnnealingLRParams(BaseModel):
@@ -16,7 +15,7 @@ class CosineAnnealingLRParams(BaseModel):
     last_epoch: int = -1
 
 
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """Returns a dictionary of valid parameters for `torch.optim.lr_scheduler.CosineAnnealingLR`."""
         return self.model_dump()
 
@@ -26,7 +25,7 @@ class CosineAnnealingLRScheduler(BaseScheduler):
     Wrapper around torch.optim.lr_scheduler.CosineAnnealingLR.
     """
 
-    def __init__(self, optimizer: optim.Optimizer, params: CosineAnnealingLRParams):
+    def __init__(self, optimizer: optim.Optimizer, params: CosineAnnealingLRParams) -> None:
         """
         Args:
             optimizer (Optimizer): Wrapped optimizer.

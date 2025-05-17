@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Optional
+from typing import Any
 from pydantic import BaseModel
 
 from .wandb_config import WandbConfig
@@ -13,7 +13,7 @@ class ComponentConfig(BaseModel):
     name: str
     params: BaseModel
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self) -> dict[str, Any]:
         """
         Recursively serializes the component into a dictionary.
 
@@ -24,22 +24,18 @@ class ComponentConfig(BaseModel):
             params_dump = self.params.model_dump()
         else:
             params_dump = self.params
-        return {
-            "name": self.name,
-            "params": params_dump
-        }
-        
+        return {"name": self.name, "params": params_dump}
 
 
 class Config(BaseModel):
     model: ComponentConfig
     dataset_config: DatasetConfig
     wandb_config: WandbConfig
-    criterion: Optional[ComponentConfig] = None
-    optimizer: Optional[ComponentConfig] = None
-    scheduler: Optional[ComponentConfig] = None
+    criterion: ComponentConfig | None = None
+    optimizer: ComponentConfig | None = None
+    scheduler: ComponentConfig | None = None
 
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """
         Produce a JSON‐serializable dict of this config, including nested
         ComponentConfig and DatasetConfig entries. Useful for saving to file
@@ -49,7 +45,7 @@ class Config(BaseModel):
             A dict with keys 'model', 'dataset_config', and (if set)
             'criterion', 'optimizer', 'scheduler'.
         """
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "model": self.model.dump(),
             "dataset_config": self.dataset_config.model_dump(),
         }
@@ -62,7 +58,6 @@ class Config(BaseModel):
         data["wandb"] = self.wandb_config.model_dump()
         return data
 
-
     def save_json(self, file_path: str, indent: int = 4) -> None:
         """
         Save this config to a JSON file.
@@ -74,7 +69,6 @@ class Config(BaseModel):
         config_dict = self.asdict()
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(config_dict, indent=indent))
-
 
     @classmethod
     def load_json(cls, file_path: str) -> "Config":
@@ -96,10 +90,12 @@ class Config(BaseModel):
         wandb_config = WandbConfig(**data.get("wandb", {}))
 
         # Helper function to parse registry fields.
-        def parse_field(component_data: Dict[str, Any], registry_getter) -> Optional[ComponentConfig]:
+        def parse_field(
+            component_data: dict[str, Any], registry_getter
+        ) -> ComponentConfig | None:
             name = component_data.get("name")
             params_data = component_data.get("params", {})
-            
+
             if name is not None:
                 expected = registry_getter(name)
                 params = expected(**params_data)
@@ -107,16 +103,31 @@ class Config(BaseModel):
             return None
 
         from core import (
-            ModelRegistry, CriterionRegistry, OptimizerRegistry, SchedulerRegistry
+            ModelRegistry,
+            CriterionRegistry,
+            OptimizerRegistry,
+            SchedulerRegistry,
         )
 
-        parsed_model = parse_field(data.get("model", {}), lambda key: ModelRegistry.get_model_params(key))
-        parsed_criterion = parse_field(data.get("criterion", {}), lambda key: CriterionRegistry.get_criterion_params(key))
-        parsed_optimizer = parse_field(data.get("optimizer", {}), lambda key: OptimizerRegistry.get_optimizer_params(key))
-        parsed_scheduler = parse_field(data.get("scheduler", {}), lambda key: SchedulerRegistry.get_scheduler_params(key))
+        parsed_model = parse_field(
+            data.get("model", {}),
+            lambda key: ModelRegistry.get_model_params(key),
+        )
+        parsed_criterion = parse_field(
+            data.get("criterion", {}),
+            lambda key: CriterionRegistry.get_criterion_params(key),
+        )
+        parsed_optimizer = parse_field(
+            data.get("optimizer", {}),
+            lambda key: OptimizerRegistry.get_optimizer_params(key),
+        )
+        parsed_scheduler = parse_field(
+            data.get("scheduler", {}),
+            lambda key: SchedulerRegistry.get_scheduler_params(key),
+        )
 
         if parsed_model is None:
-            raise ValueError('Failed to load model information')
+            raise ValueError("Failed to load model information")
 
         return cls(
             model=parsed_model,
@@ -124,5 +135,5 @@ class Config(BaseModel):
             criterion=parsed_criterion,
             optimizer=parsed_optimizer,
             scheduler=parsed_scheduler,
-            wandb_config=wandb_config
+            wandb_config=wandb_config,
         )

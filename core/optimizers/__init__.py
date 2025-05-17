@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Dict, Final, Tuple, Type, List, Any, Union
+from typing import Final, Type, Any
 
 from .base import BaseOptimizer
 from .adam import AdamParams, AdamOptimizer
@@ -16,7 +16,7 @@ class OptimizerRegistry:
     """Registry for optimizers and their parameter classes with case-insensitive lookup."""
     
     # Single dictionary storing both optimizer classes and parameter classes.
-    __OPTIMIZERS: Final[Dict[str, Dict[str, Type[Any]]]] = {
+    __OPTIMIZERS: Final[dict[str, dict[str, Type[Any]]]] = {
         "SGD": {
             "class": SGDOptimizer,
             "params": SGDParams,
@@ -32,7 +32,7 @@ class OptimizerRegistry:
     }
     
     @classmethod
-    def __get_entry(cls, name: str) -> Dict[str, Type[Any]]:
+    def __get_entry(cls, name: str) -> dict[str, Type[Any]]:
         """
         Private method to retrieve the optimizer entry from the registry using case-insensitive lookup.
         
@@ -40,7 +40,7 @@ class OptimizerRegistry:
             name (str): The name of the optimizer.
         
         Returns:
-            Dict[str, Type[Any]]: A dictionary containing the keys 'class' and 'params'.
+            dict(str, Type(Any)): A dictionary containing the keys 'class' and 'params'.
         
         Raises:
             ValueError: If the optimizer is not found.
@@ -63,7 +63,7 @@ class OptimizerRegistry:
             name (str): Name of the optimizer.
         
         Returns:
-            Type[BaseOptimizer]: The optimizer class.
+            Type(BaseOptimizer): The optimizer class.
         """
         entry = cls.__get_entry(name)
         return entry["class"]
@@ -77,17 +77,17 @@ class OptimizerRegistry:
             name (str): Name of the optimizer.
         
         Returns:
-            Type[BaseModel]: The optimizer parameter class.
+            Type(BaseModel): The optimizer parameter class.
         """
         entry = cls.__get_entry(name)
         return entry["params"]
     
     @classmethod
-    def get_available_optimizers(cls) -> Tuple[str, ...]:
+    def get_available_optimizers(cls) -> tuple[str, ...]:
         """
         Returns a tuple of available optimizer names in their original case.
         
         Returns:
-            Tuple[str]: Tuple of available optimizer names.
+            Tuple(str): Tuple of available optimizer names.
         """
         return tuple(cls.__OPTIMIZERS.keys())

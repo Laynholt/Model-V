@@ -1,19 +1,19 @@
 from pydantic import BaseModel, model_validator
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class WandbConfig(BaseModel):
     """
     Configuration for Weights & Biases logging.
     """
-    use_wandb: bool = False            # Whether to enable WandB logging
-    project: Optional[str] = None      # WandB project name
-    group: Optional[str] = None        # WandB group name
-    entity: Optional[str] = None       # WandB entity (user or team)
-    name: Optional[str] = None         # Name of the run
-    tags: Optional[list[str]] = None   # List of tags for the run
-    notes: Optional[str] = None        # Notes or description for the run
-    save_code: bool = True             # Whether to save the code to WandB
+    use_wandb: bool = False         # Whether to enable WandB logging
+    project: str | None = None      # WandB project name
+    group: str | None = None        # WandB group name
+    entity: str | None = None       # WandB entity (user or team)
+    name: str | None = None         # Name of the run
+    tags: list[str] | None = None   # List of tags for the run
+    notes: str | None = None        # Notes or description for the run
+    save_code: bool = True          # Whether to save the code to WandB
 
     @model_validator(mode="after")
     def validate_wandb(self) -> "WandbConfig":
@@ -22,7 +22,7 @@ class WandbConfig(BaseModel):
                 raise ValueError("When use_wandb=True, 'project' must be provided")
         return self
     
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """
         Return a dict of all W&B parameters, excluding 'use_wandb' and any None values.
         """

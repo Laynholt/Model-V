@@ -1,6 +1,8 @@
-from .base import *
-from typing import List, Literal, Union
+from .base import BaseLoss
+import torch
+from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
+from monai.metrics.cumulative_average import CumulativeAverage
 
 
 class BCELossParams(BaseModel):
@@ -11,11 +13,11 @@ class BCELossParams(BaseModel):
     
     with_logits: bool = False
     
-    weight: Optional[List[Union[int, float]]] = None  # Sample weights
+    weight: list[int | float] | None = None  # Sample weights
     reduction: Literal["none", "mean", "sum"] = "mean"  # Reduction method
-    pos_weight: Optional[List[Union[int, float]]] = None  # Used only for BCEWithLogitsLoss
+    pos_weight: list[int | float] | None = None  # Used only for BCEWithLogitsLoss
 
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """
         Returns a dictionary of valid parameters for `nn.BCEWithLogitsLoss` and `nn.BCELoss`.
 
@@ -23,7 +25,7 @@ class BCELossParams(BaseModel):
         - Ensures only the valid parameters are passed based on the loss function.
 
         Returns:
-            Dict[str, Any]: Filtered dictionary of parameters.
+            dict(str, Any): Filtered dictionary of parameters.
         """
         loss_kwargs = self.model_dump()
         if not self.with_logits:
@@ -47,19 +49,23 @@ class BCELoss(BaseLoss):
     Custom loss function wrapper for `nn.BCELoss and nn.BCEWithLogitsLoss` with tracking of loss metrics.
     """
 
-    def __init__(self, params: Optional[BCELossParams] = None):
+    def __init__(self, params: BCELossParams | None = None) -> None:
         """
         Initializes the loss function with optional BCELoss parameters.
 
         Args:
-            params (Optional[Dict[str, Any]]): Parameters for nn.BCELoss (default: None).
+            params (BCELossParams | None): Parameters for nn.BCELoss (default: None).
         """
         super().__init__(params=params)
         with_logits = params.with_logits if params is not None else False
         _bce_params = params.asdict() if params is not None else {}
         
         # Initialize loss functions with user-provided parameters or PyTorch defaults
-        self.bce_loss = nn.BCEWithLogitsLoss(**_bce_params) if with_logits else nn.BCELoss(**_bce_params)
+        self.bce_loss = (
+            torch.nn.BCEWithLogitsLoss(**_bce_params) 
+            if with_logits 
+            else torch.nn.BCELoss(**_bce_params)
+        )
         
         # Using CumulativeAverage from MONAI to track loss metrics
         self.loss_bce_metric = CumulativeAverage()
@@ -90,18 +96,18 @@ class BCELoss(BaseLoss):
         return loss
 
 
-    def get_loss_metrics(self) -> Dict[str, float]:
+    def get_loss_metrics(self) -> dict[str, float]:
         """
         Retrieves the tracked loss metrics.
 
         Returns:
-            Dict[str, float]: A dictionary containing the average BCE loss.
+            dict(str, float): A dictionary containing the average BCE loss.
         """
         return {
             "loss": round(self.loss_bce_metric.aggregate().item(), 4),
         }
 
 
-    def reset_metrics(self):
+    def reset_metrics(self) -> None:
         """Resets the stored loss metrics."""
         self.loss_bce_metric.reset()

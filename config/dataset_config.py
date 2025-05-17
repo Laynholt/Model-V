@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator, field_validator
-from typing import Any, Dict, Optional, Union
+from typing import Any
 import os
 
 
@@ -7,7 +7,7 @@ class DatasetCommonConfig(BaseModel):
     """
     Common configuration fields shared by both training and testing.
     """
-    seed: Optional[int] = 0         # Seed for splitting if data is not pre-split (and all random operations)
+    seed: int | None = 0            # Seed for splitting if data is not pre-split (and all random operations)
     device: str = "cuda:0"          # Device used for training/testing (e.g., 'cpu' or 'cuda')
     use_amp: bool = False           # Flag to use Automatic Mixed Precision (AMP)
     roi_size: int = 512             # The size of the square window for cropping
@@ -65,9 +65,9 @@ class DatasetTrainingConfig(BaseModel):
     pre_split: TrainingPreSplitInfo = TrainingPreSplitInfo()
     split: TrainingSplitInfo = TrainingSplitInfo()
 
-    train_size: Union[int, float] = 0.7    # Training data size (int for static, float in (0,1] for dynamic)
-    valid_size: Union[int, float] = 0.1    # Validation data size (int for static, float in (0,1] for dynamic)
-    test_size: Union[int, float] = 0.2     # Testing data size (int for static, float in (0,1] for dynamic)
+    train_size: int | float = 0.7    # Training data size (int for static, float in (0,1] for dynamic)
+    valid_size: int | float = 0.1    # Validation data size (int for static, float in (0,1] for dynamic)
+    test_size: int | float = 0.2     # Testing data size (int for static, float in (0,1] for dynamic)
     train_offset: int = 0           # Offset for training data
     valid_offset: int = 0           # Offset for validation data
     test_offset: int = 0            # Offset for testing data 
@@ -78,7 +78,7 @@ class DatasetTrainingConfig(BaseModel):
 
 
     @field_validator("train_size", "valid_size", "test_size", mode="before")
-    def validate_sizes(cls, v: Union[int, float]) -> Union[int, float]:
+    def validate_sizes(cls, v: int | float) -> int | float:
         """
         Validates size values:
         - If provided as a float, must be in the range (0, 1].
@@ -145,12 +145,12 @@ class DatasetTestingConfig(BaseModel):
     Configuration fields used only in testing mode.
     """
     test_dir: str = "."                    # Test data directory; must be non-empty
-    test_size: Union[int, float] = 1.0     # Testing data size (int for static, float in (0,1] for dynamic)
+    test_size: int | float = 1.0     # Testing data size (int for static, float in (0,1] for dynamic)
     test_offset: int = 0                # Offset for testing data 
     shuffle: bool = True                # Shuffle data
 
     @field_validator("test_size", mode="before")
-    def validate_test_size(cls, v: Union[int, float]) -> Union[int, float]:
+    def validate_test_size(cls, v: int | float) -> int | float:
         """
         Validates the test_size value.
         """
@@ -224,7 +224,7 @@ class DatasetConfig(BaseModel):
                 raise ValueError(f"Path for pretrained_weights does not exist: {self.common.pretrained_weights}")
         return self
 
-    def model_dump(self, **kwargs) -> Dict[str, Any]:
+    def model_dump(self, **kwargs) -> dict[str, Any]:
         """
         Dumps only the relevant configuration depending on the is_training flag.
         Only the nested configuration (training or testing) along with common fields is returned.

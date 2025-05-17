@@ -1,6 +1,6 @@
 import torch
 from torch import optim
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Iterable
 from pydantic import BaseModel, ConfigDict
 
 from .base import BaseOptimizer
@@ -10,12 +10,12 @@ class AdamWParams(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     lr: float = 1e-3                            # Learning rate
-    betas: Tuple[float, ...] = (0.9, 0.999)   # Adam coefficients
+    betas: tuple[float, ...] = (0.9, 0.999)   # Adam coefficients
     eps: float = 1e-8                           # Numerical stability
     weight_decay: float = 1e-2                  # L2 penalty (AdamW uses decoupled weight decay)
     amsgrad: bool = False                       # Whether to use the AMSGrad variant
 
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """Returns a dictionary of valid parameters for `torch.optim.AdamW`."""
         return self.model_dump()
     
@@ -25,7 +25,7 @@ class AdamWOptimizer(BaseOptimizer):
     Wrapper around torch.optim.AdamW.
     """
 
-    def __init__(self, model_params: Iterable[torch.nn.Parameter], optim_params: AdamWParams):
+    def __init__(self, model_params: Iterable[torch.nn.Parameter], optim_params: AdamWParams) -> None:
         """
         Initializes the AdamW optimizer with given parameters.
 

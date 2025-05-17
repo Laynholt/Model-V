@@ -1,9 +1,9 @@
-from typing import Any, Dict
-from pydantic import BaseModel, ConfigDict
+from .base import BaseScheduler
+
+from typing import Any
 from torch import optim
 from torch.optim.lr_scheduler import ExponentialLR
-
-from .base import BaseScheduler
+from pydantic import BaseModel, ConfigDict
 
 
 class ExponentialLRParams(BaseModel):
@@ -13,7 +13,7 @@ class ExponentialLRParams(BaseModel):
     gamma: float = 0.95 # Multiplicative factor of learning rate decay
     last_epoch: int = -1
 
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """Returns a dictionary of valid parameters for `torch.optim.lr_scheduler.ExponentialLR`."""
         return self.model_dump()
 
@@ -23,7 +23,7 @@ class ExponentialLRScheduler(BaseScheduler):
     Wrapper around torch.optim.lr_scheduler.ExponentialLR.
     """
 
-    def __init__(self, optimizer: optim.Optimizer, params: ExponentialLRParams):
+    def __init__(self, optimizer: optim.Optimizer, params: ExponentialLRParams) -> None:
         """
         Args:
             optimizer (Optimizer): Wrapped optimizer.

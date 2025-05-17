@@ -1,8 +1,11 @@
-from .base import *
+from .base import BaseLoss
 from .bce import BCELossParams
 from .mse import MSELossParams
 
+import torch
+from typing import Any
 from pydantic import BaseModel, ConfigDict
+from monai.metrics.cumulative_average import CumulativeAverage
 
 
 class BCE_MSE_LossParams(BaseModel):
@@ -15,12 +18,12 @@ class BCE_MSE_LossParams(BaseModel):
     bce_params: BCELossParams = BCELossParams()
     mse_params: MSELossParams = MSELossParams()
     
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """
         Returns a dictionary of valid parameters for `nn.BCELoss` and `nn.MSELoss`.
 
         Returns:
-            Dict[str, Any]: Dictionary of parameters.
+            dict(str, Any): Dictionary of parameters.
         """
         
         return {
@@ -35,7 +38,7 @@ class BCE_MSE_Loss(BaseLoss):
     Custom loss function combining BCE (with or without logits) and MSE losses for cell recognition and distinction.
     """
 
-    def __init__(self, params: Optional[BCE_MSE_LossParams]):
+    def __init__(self, params: BCE_MSE_LossParams | None = None):
         """
         Initializes the loss function with optional BCE and MSE parameters.
         """
@@ -50,14 +53,16 @@ class BCE_MSE_Loss(BaseLoss):
 
         # Choose BCE loss function
         self.bce_loss = (
-            nn.BCEWithLogitsLoss(**_bce_params) if _params.bce_params.with_logits else nn.BCELoss(**_bce_params)
+            torch.nn.BCEWithLogitsLoss(**_bce_params)
+            if _params.bce_params.with_logits 
+            else torch.nn.BCELoss(**_bce_params)
         )
 
         # Process MSE parameters
         _mse_params = _params.mse_params.asdict()
 
         # Initialize MSE loss
-        self.mse_loss = nn.MSELoss(**_mse_params)
+        self.mse_loss = torch.nn.MSELoss(**_mse_params)
 
         # Using CumulativeAverage from MONAI to track loss metrics
         self.loss_bce_metric = CumulativeAverage()
@@ -101,12 +106,12 @@ class BCE_MSE_Loss(BaseLoss):
 
         return total_loss
 
-    def get_loss_metrics(self) -> Dict[str, float]:
+    def get_loss_metrics(self) -> dict[str, float]:
         """
         Retrieves the tracked loss metrics.
 
         Returns:
-            Dict[str, float]: A dictionary containing the average BCE and MSE loss.
+            dict(str, float): A dictionary containing the average BCE and MSE loss.
         """
         return {
             "bce_loss": round(self.loss_bce_metric.aggregate().item(), 4),

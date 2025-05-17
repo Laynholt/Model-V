@@ -1,7 +1,7 @@
 import numpy as np
 import tifffile as tif
 import skimage.io as io
-from typing import Final, List, Optional, Sequence, Type, Union
+from typing import Final, Sequence, Type
 
 from monai.utils.enums import PostFix
 from monai.utils.module import optional_import
@@ -45,7 +45,7 @@ class CustomLoadImage(LoadImage):
     """
     def __init__(
         self,
-        reader: Optional[Union[ImageReader, Type[ImageReader], str]] = None,
+        reader: ImageReader | Type[ImageReader] | str | None = None,
         image_only: bool = False,
         dtype: DtypeLike = np.float32,
         ensure_channel_first: bool = False,
@@ -75,9 +75,9 @@ class CustomLoadImaged(LoadImaged):
     def __init__(
         self,
         keys: KeysCollection,
-        reader: Optional[Union[Type[ImageReader], str]] = None,
+        reader: Type[ImageReader] | str | None = None,
         dtype: DtypeLike = np.float32,
-        meta_keys: Optional[KeysCollection] = None,
+        meta_keys: KeysCollection | None = None,
         meta_key_postfix: str = DEFAULT_POST_FIX,
         overwriting: bool = False,
         image_only: bool = False,
@@ -141,13 +141,13 @@ class UniversalImageReader(NumpyReader):
     (e.g., repeating or cropping channels).
     """
     def __init__(
-        self, channel_dim: Optional[int] = None, **kwargs,
-    ):
+        self, channel_dim: int | None = None, **kwargs,
+    ) -> None:
         super().__init__(channel_dim=channel_dim, **kwargs)
         self.kwargs = kwargs
         self.channel_dim = channel_dim
 
-    def verify_suffix(self, filename: Union[Sequence[PathLike], PathLike]) -> bool:
+    def verify_suffix(self, filename: Sequence[PathLike] | PathLike) -> bool:
         """
         Check if the file format is supported for reading.
         
@@ -155,7 +155,7 @@ class UniversalImageReader(NumpyReader):
         """
         return has_itk or is_supported_format(filename, SUPPORTED_IMAGE_FORMATS)
 
-    def read(self, data: Union[Sequence[PathLike], PathLike], **kwargs):
+    def read(self, data: Sequence[PathLike] | PathLike, **kwargs):
         """
         Read image(s) from the given path.
         
@@ -166,7 +166,7 @@ class UniversalImageReader(NumpyReader):
         Returns:
           A single image or a list of images depending on the number of paths provided.
         """
-        images: List[np.ndarray] = []  # List to store the loaded images
+        images: list[np.ndarray] = []  # List to store the loaded images
 
         # Convert data to a tuple to support multiple files
         filenames: Sequence[PathLike] = ensure_tuple(data)

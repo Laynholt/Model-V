@@ -1,6 +1,6 @@
 import torch
 from torch import optim
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Iterable
 from pydantic import BaseModel, ConfigDict
 
 from .base import BaseOptimizer
@@ -16,7 +16,7 @@ class SGDParams(BaseModel):
     weight_decay: float = 0.0                   # L2 penalty
     nesterov: bool = False                      # Enables Nesterov momentum
 
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """Returns a dictionary of valid parameters for `torch.optim.SGD`."""
         return self.model_dump()
     
@@ -26,7 +26,7 @@ class SGDOptimizer(BaseOptimizer):
     Wrapper around torch.optim.SGD.
     """
 
-    def __init__(self, model_params: Iterable[torch.nn.Parameter], optim_params: SGDParams):
+    def __init__(self, model_params: Iterable[torch.nn.Parameter], optim_params: SGDParams) -> None:
         """
         Initializes the SGD optimizer with given parameters.
 

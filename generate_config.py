@@ -1,5 +1,4 @@
 import os
-from typing import Tuple
 
 from config import Config, WandbConfig, DatasetConfig, ComponentConfig
 
@@ -8,7 +7,7 @@ from core import (
 )
 
 
-def prompt_choice(prompt_message: str, options: Tuple[str, ...]) -> str:
+def prompt_choice(prompt_message: str, options: tuple[str, ...]) -> str:
     """
     Prompt the user with a list of options and return the selected option.
     """

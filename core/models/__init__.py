@@ -1,5 +1,5 @@
-import torch.nn as nn
-from typing import Dict, Final, Tuple, Type, Any, List, Union
+from torch import nn
+from typing import Final, Type, Any
 from pydantic import BaseModel
 
 from .model_v import ModelV, ModelVParams
@@ -16,7 +16,7 @@ class ModelRegistry:
     """Registry for models and their parameter classes with case-insensitive lookup."""
     
     # Single dictionary storing both model classes and parameter classes.
-    __MODELS: Final[Dict[str, Dict[str, Type[Any]]]] = {
+    __MODELS: Final[dict[str, dict[str, Type[Any]]]] = {
         "ModelV": {
             "class": ModelV,
             "params": ModelVParams,
@@ -24,7 +24,7 @@ class ModelRegistry:
     }
     
     @classmethod
-    def __get_entry(cls, name: str) -> Dict[str, Type[Any]]:
+    def __get_entry(cls, name: str) -> dict[str, Type[Any]]:
         """
         Private method to retrieve the model entry from the registry using case-insensitive lookup.
         
@@ -32,7 +32,7 @@ class ModelRegistry:
             name (str): The name of the model.
         
         Returns:
-            Dict[str, Type[Any]]: A dictionary containing the keys 'class' and 'params'.
+            dict(str, Type[Any]): A dictionary containing the keys 'class' and 'params'.
         
         Raises:
             ValueError: If the model is not found.
@@ -55,7 +55,7 @@ class ModelRegistry:
             name (str): Name of the model.
         
         Returns:
-            Type[nn.Module]: The model class.
+            Type(torch.nn.Module): The model class.
         """
         entry = cls.__get_entry(name)
         return entry["class"]
@@ -69,17 +69,17 @@ class ModelRegistry:
             name (str): Name of the model.
         
         Returns:
-            Type[BaseModel]: The model parameter class.
+            Type(BaseModel): The model parameter class.
         """
         entry = cls.__get_entry(name)
         return entry["params"]
     
     @classmethod
-    def get_available_models(cls) -> Tuple[str, ...]:
+    def get_available_models(cls) -> tuple[str, ...]:
         """
         Returns a tuple of available model names in their original case.
         
         Returns:
-            Tuple[str]: Tuple of available model names.
+            Tuple(str): Tuple of available model names.
         """
         return tuple(cls.__MODELS.keys())

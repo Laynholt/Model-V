@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 from numba import jit
 from skimage import segmentation
 from scipy.optimize import linear_sum_assignment
-from typing import Dict, List, Tuple, Any, Union
+from typing import Any
 
 from core.logger import get_logger
 
@@ -27,7 +27,7 @@ def compute_f1_score(
     true_positives: int,
     false_positives: int,
     false_negatives: int
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """
     Computes the precision, recall, and F1-score given the numbers of
     true positives, false positives, and false negatives.
@@ -76,7 +76,7 @@ def compute_confusion_matrix(
     ground_truth_mask: np.ndarray,
     predicted_mask: np.ndarray,
     iou_threshold: float = 0.5
-) -> Tuple[int, int, int]:
+) -> tuple[int, int, int]:
     """
     Computes the confusion matrix elements (true positives, false positives, false negatives)
     for a single image given the ground truth and predicted masks.
@@ -114,7 +114,7 @@ def compute_segmentation_tp_fp_fn(
     iou_threshold: float = 0.5,
     return_error_masks: bool = False,
     remove_boundary_objects: bool = True
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Computes TP, FP and FN for segmentation on a single image.
     
@@ -176,7 +176,7 @@ def compute_segmentation_tp_fp_fn(
             false_positive_mask_list.append(results.get('fp_mask')) # type: ignore
             false_negative_mask_list.append(results.get('fn_mask')) # type: ignore
 
-    output: Dict[str, np.ndarray] = {
+    output: dict[str, np.ndarray] = {
         'tp': np.array(true_positive_list),
         'fp': np.array(false_positive_list),
         'fn': np.array(false_negative_list)
@@ -194,7 +194,7 @@ def compute_segmentation_f1_metrics(
     iou_threshold: float = 0.5,
     return_error_masks: bool = False,
     remove_boundary_objects: bool = True
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Computes F1 metrics (precision, recall, F1-score) for segmentation on a single image.
     
@@ -240,7 +240,7 @@ def compute_segmentation_f1_metrics(
         recall_list.append(recall)
         f1_score_list.append(f1_score)
 
-    output: Dict[str, np.ndarray] = {
+    output: dict[str, np.ndarray] = {
         'precision': np.array(precision_list),
         'recall': np.array(recall_list),
         'f1_score': np.array(f1_score_list),
@@ -255,7 +255,7 @@ def compute_segmentation_average_precision_metrics(
     iou_threshold: float = 0.5,
     return_error_masks: bool = False,
     remove_boundary_objects: bool = True
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Computes the average precision (AP) for segmentation on a single image.
     
@@ -298,7 +298,7 @@ def compute_segmentation_average_precision_metrics(
         )
         avg_precision_list.append(avg_precision)
         
-    output: Dict[str, np.ndarray] = {
+    output: dict[str, np.ndarray] = {
         'avg_precision': np.array(avg_precision_list)
     }
     output.update(results)
@@ -311,7 +311,7 @@ def compute_batch_segmentation_tp_fp_fn(
     iou_threshold: float = 0.5,
     return_error_masks: bool = False,
     remove_boundary_objects: bool = True
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Computes segmentation TP, FP and FN for a batch of images.
     
@@ -361,7 +361,7 @@ def compute_batch_segmentation_tp_fp_fn(
             fp_mask_list.append(result.get('fp_mask')) # type: ignore
             fn_mask_list.append(result.get('fn_mask')) # type: ignore
 
-    output: Dict[str, np.ndarray] = {
+    output: dict[str, np.ndarray] = {
         'tp': np.stack(tp_list, axis=0),
         'fp': np.stack(fp_list, axis=0),
         'fn': np.stack(fn_list, axis=0)
@@ -379,7 +379,7 @@ def compute_batch_segmentation_f1_metrics(
     iou_threshold: float = 0.5,
     return_error_masks: bool = False,
     remove_boundary_objects: bool = True
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Computes segmentation F1 metrics for a batch of images.
     
@@ -435,7 +435,7 @@ def compute_batch_segmentation_f1_metrics(
             fp_mask_list.append(result.get('fp_mask')) # type: ignore
             fn_mask_list.append(result.get('fn_mask')) # type: ignore
 
-    output: Dict[str, np.ndarray] = {
+    output: dict[str, np.ndarray] = {
         'precision': np.stack(precision_list, axis=0),
         'recall': np.stack(recall_list, axis=0),
         'f1_score': np.stack(f1_score_list, axis=0),
@@ -456,7 +456,7 @@ def compute_batch_segmentation_average_precision_metrics(
     iou_threshold: float = 0.5,
     return_error_masks: bool = False,
     remove_boundary_objects: bool = True
-) -> Dict[str, NDArray]:
+) -> dict[str, np.ndarray]:
     """
     Computes segmentation average precision metrics for a batch of images.
     
@@ -508,7 +508,7 @@ def compute_batch_segmentation_average_precision_metrics(
             fp_mask_list.append(result.get('fp_mask')) # type: ignore
             fn_mask_list.append(result.get('fn_mask')) # type: ignore
 
-    output: Dict[str, NDArray] = {
+    output: dict[str, np.ndarray] = {
         'avg_precision': np.stack(avg_precision_list, axis=0),
         'tp': np.stack(tp_list, axis=0),
         'fp': np.stack(fp_list, axis=0),
@@ -555,7 +555,7 @@ def _process_instance_matching(
     iou_threshold: float = 0.5,
     return_masks: bool = False,
     without_boundary_objects: bool = True
-) -> Dict[str, Union[int, NDArray[np.uint8]]]:
+) -> dict[str, int | NDArray[np.uint8]]:
     """
     Processes instance matching on a full image by performing the following steps:
       - Removes objects that touch the image boundary and reindexes the masks.
@@ -597,8 +597,8 @@ def _process_instance_matching(
             fn_mask = np.zeros_like(ground_truth_mask, dtype=np.uint8)
             # Mark all ground truth objects as false negatives.
             fn_mask[ground_truth_mask > 0] = 1
-            result.update({'tp_mask': tp_mask, 'fp_mask': fp_mask, 'fn_mask': fn_mask})
-        return result
+            result.update({'tp_mask': tp_mask, 'fp_mask': fp_mask, 'fn_mask': fn_mask}) # type: ignore
+        return result # type: ignore
 
     # Compute the IoU matrix for the processed masks.
     iou_matrix = _calculate_iou(processed_ground_truth, processed_prediction)
@@ -640,11 +640,11 @@ def _process_instance_matching(
         for pred_label in (all_prediction_labels - matched_prediction_labels):
             fp_mask[processed_prediction == pred_label] = 1
 
-        result.update({'tp_mask': tp_mask, 'fp_mask': fp_mask, 'fn_mask': fn_mask})
-    return result
+        result.update({'tp_mask': tp_mask, 'fp_mask': fp_mask, 'fn_mask': fn_mask}) # type: ignore
+    return result # type: ignore
 
 
-def _compute_optimal_matching_pairs(iou_matrix: np.ndarray, iou_threshold: float) -> List[Any]:
+def _compute_optimal_matching_pairs(iou_matrix: np.ndarray, iou_threshold: float) -> list[Any]:
     """
     Computes the optimal matching pairs between ground truth and predicted masks using the IoU matrix.
     
@@ -687,7 +687,7 @@ def _compute_patch_based_metrics(
     iou_threshold: float = 0.5,
     return_masks: bool = False,
     without_boundary_objects: bool = True
-) -> Dict[str, Union[int, NDArray[np.uint8]]]:
+) -> dict[str, int | NDArray[np.uint8]]:
     """
     Computes segmentation metrics using a patch-based approach for very large images.
     
@@ -747,7 +747,7 @@ def _compute_patch_based_metrics(
                 padded_fp_mask[y_start:y_end, x_start:x_end] = patch_results.get('fp_mask', 0) # type: ignore
                 padded_fn_mask[y_start:y_end, x_start:x_end] = patch_results.get('fn_mask', 0) # type: ignore
 
-    results: Dict[str, Union[int, np.ndarray]] = {'tp': total_tp, 'fp': total_fp, 'fn': total_fn}
+    results: dict[str, int | np.ndarray] = {'tp': total_tp, 'fp': total_fp, 'fn': total_fn}
     if return_masks:
         # Crop the padded masks back to the original image size.
         results.update({

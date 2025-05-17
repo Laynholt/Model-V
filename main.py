@@ -1,20 +1,25 @@
 import os
+import sys
 import argparse
 import wandb
 
 from config import Config
-from core.data import *
+from core.data import (
+    get_train_transforms,
+    get_valid_transforms,
+    get_test_transforms,
+    get_predict_transforms
+)
 from core.segmentator import CellSegmentator
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Train or predict cell segmentator with specified config file."
     )
     parser.add_argument(
         '-c', '--config',
         type=str,
-        default='config/templates/train/ModelV_BCE_MSE_Loss_AdamW_CosineAnnealing.json',
         help='Path to the JSON config file'
     )
     parser.add_argument(
@@ -36,6 +41,10 @@ def main():
               ' masks without additional visualizations')
     )
 
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
+
     args = parser.parse_args()
 
     mode = args.mode
@@ -44,7 +53,7 @@ def main():
 
     if mode == 'train' and not config.dataset_config.is_training:
         raise ValueError(
-            f"Config is not set for training (is_training=False), but mode 'train' was requested."
+            "Config is not set for training (is_training=False), but mode 'train' was requested."
         )
     if mode in ('test', 'predict') and config.dataset_config.is_training:
         raise ValueError(

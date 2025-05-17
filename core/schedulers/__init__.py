@@ -1,5 +1,4 @@
-import torch.optim.lr_scheduler as lr_scheduler
-from typing import Dict, Final, Tuple, Type, List, Any, Union
+from typing import Final, Type, Any
 from pydantic import BaseModel
 
 from .base import BaseScheduler
@@ -17,7 +16,7 @@ __all__ = [
 class SchedulerRegistry:
     """Registry for learning rate schedulers and their parameter classes with case-insensitive lookup."""
     
-    __SCHEDULERS: Final[Dict[str, Dict[str, Type[Any]]]] = {
+    __SCHEDULERS: Final[dict[str, dict[str, Type[Any]]]] = {
         "Step": {
             "class": StepLRScheduler,
             "params": StepLRParams,
@@ -37,7 +36,7 @@ class SchedulerRegistry:
     }
     
     @classmethod
-    def __get_entry(cls, name: str) -> Dict[str, Type[Any]]:
+    def __get_entry(cls, name: str) -> dict[str, Type[Any]]:
         """
         Private method to retrieve the scheduler entry from the registry using case-insensitive lookup.
         
@@ -45,7 +44,7 @@ class SchedulerRegistry:
             name (str): The name of the scheduler.
         
         Returns:
-            Dict[str, Type[Any]]: A dictionary containing the keys 'class' and 'params'.
+            dict(str, Type(Any)): A dictionary containing the keys 'class' and 'params'.
         
         Raises:
             ValueError: If the scheduler is not found.
@@ -68,7 +67,7 @@ class SchedulerRegistry:
             name (str): Name of the scheduler.
         
         Returns:
-            Type[BaseScheduler]: The scheduler class.
+            Type(BaseScheduler): The scheduler class.
         """
         entry = cls.__get_entry(name)
         return entry["class"]
@@ -82,17 +81,17 @@ class SchedulerRegistry:
             name (str): Name of the scheduler.
         
         Returns:
-            Type[BaseModel]: The scheduler parameter class.
+            Type(BaseModel): The scheduler parameter class.
         """
         entry = cls.__get_entry(name)
         return entry["params"]
     
     @classmethod
-    def get_available_schedulers(cls) -> Tuple[str, ...]:
+    def get_available_schedulers(cls) -> tuple[str, ...]:
         """
         Returns a tuple of available scheduler names in their original case.
         
         Returns:
-            Tuple[str]: Tuple of available scheduler names.
+            Tuple(str): Tuple of available scheduler names.
         """
         return tuple(cls.__SCHEDULERS.keys())

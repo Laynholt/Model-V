@@ -1,9 +1,9 @@
-from typing import Any, Dict
-from pydantic import BaseModel, ConfigDict
+from .base import BaseScheduler
+
+from typing import Any
 from torch import optim
 from torch.optim.lr_scheduler import StepLR
-
-from .base import BaseScheduler
+from pydantic import BaseModel, ConfigDict
 
 
 class StepLRParams(BaseModel):
@@ -14,7 +14,7 @@ class StepLRParams(BaseModel):
     gamma: float = 0.1      # Multiplicative factor of learning rate decay
     last_epoch: int = -1
 
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """Returns a dictionary of valid parameters for `torch.optim.lr_scheduler.StepLR`."""
         return self.model_dump()
     
@@ -25,7 +25,7 @@ class StepLRScheduler(BaseScheduler):
     Wrapper around torch.optim.lr_scheduler.StepLR.
     """
 
-    def __init__(self, optimizer: optim.Optimizer, params: StepLRParams):
+    def __init__(self, optimizer: optim.Optimizer, params: StepLRParams) -> None:
         """
         Args:
             optimizer (Optimizer): Wrapped optimizer.

@@ -1,6 +1,8 @@
-from .base import *
-from typing import Literal
+from .base import BaseLoss
+import torch
+from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
+from monai.metrics.cumulative_average import CumulativeAverage
 
 
 class MSELossParams(BaseModel):
@@ -11,12 +13,12 @@ class MSELossParams(BaseModel):
     
     reduction: Literal["none", "mean", "sum"] = "mean"
 
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """
         Returns a dictionary of valid parameters for `nn.MSELoss`.
 
         Returns:
-            Dict[str, Any]: Dictionary of parameters for `nn.MSELoss`.
+            dict(str, Any): Dictionary of parameters for `nn.MSELoss`.
         """
         loss_kwargs = self.model_dump()
         return {k: v for k, v in loss_kwargs.items() if v is not None}  # Remove None values
@@ -27,18 +29,18 @@ class MSELoss(BaseLoss):
     Custom loss function wrapper for `nn.MSELoss` with tracking of loss metrics.
     """
 
-    def __init__(self, params: Optional[MSELossParams] = None):
+    def __init__(self, params: MSELossParams | None = None):
         """
         Initializes the loss function with optional MSELoss parameters.
 
         Args:
-            params (Optional[MSELossParams]): Parameters for `nn.MSELoss` (default: None).
+            params (MSELossParams | None): Parameters for `nn.MSELoss` (default: None).
         """
         super().__init__(params=params)
         _mse_params = params.asdict() if params is not None else {}
 
         # Initialize MSE loss with user-provided parameters or PyTorch defaults
-        self.mse_loss = nn.MSELoss(**_mse_params)
+        self.mse_loss = torch.nn.MSELoss(**_mse_params)
 
         # Using CumulativeAverage from MONAI to track loss metrics
         self.loss_mse_metric = CumulativeAverage()
@@ -67,12 +69,12 @@ class MSELoss(BaseLoss):
 
         return loss
 
-    def get_loss_metrics(self) -> Dict[str, float]:
+    def get_loss_metrics(self) -> dict[str, float]:
         """
         Retrieves the tracked loss metrics.
 
         Returns:
-            Dict[str, float]: A dictionary containing the average MSE loss.
+            dict(str, float): A dictionary containing the average MSE loss.
         """
         return {
             "loss": round(self.loss_mse_metric.aggregate().item(), 4),

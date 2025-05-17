@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from typing import Hashable, List, Sequence, Optional, Tuple
+from typing import Sequence
 
 from monai.utils.misc import fall_back_tuple
 from monai.data.meta_tensor import MetaTensor
@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 def _compute_multilabel_bbox(
     mask: np.ndarray
-) -> Optional[Tuple[List[int], List[int], List[int], List[int]]]:
+) -> tuple[list[int], list[int], list[int], list[int]] | None:
     """
     Compute per-channel bounding-box constraints and return lists of limits for each axis.
 
@@ -33,10 +33,10 @@ def _compute_multilabel_bbox(
     if channels.size == 0:
         return None
 
-    top_mins: List[int] = []
-    top_maxs: List[int] = []
-    left_mins: List[int] = []
-    left_maxs: List[int] = []
+    top_mins: list[int] = []
+    top_maxs: list[int] = []
+    left_mins: list[int] = []
+    left_maxs: list[int] = []
     C = mask.shape[0]
     for ch in range(C):
         rs, cs = np.nonzero(mask[ch])
@@ -74,7 +74,7 @@ class SpatialCropAllClasses(Randomizable, Crop):
         super().__init__(lazy=lazy)
         self.roi_size = tuple(roi_size)
         self.num_candidates = num_candidates
-        self._slices: Optional[Tuple[slice, ...]] = None
+        self._slices: tuple[slice, ...] | None = None
 
     def randomize(self, img_size: Sequence[int]) -> None: # type: ignore
         """
@@ -139,7 +139,7 @@ class SpatialCropAllClasses(Randomizable, Crop):
             slice(left, left + crop_w),
         )
 
-    def __call__(self, img: torch.Tensor, lazy: Optional[bool] = None) -> torch.Tensor: # type: ignore
+    def __call__(self, img: torch.Tensor, lazy: bool | None = None) -> torch.Tensor: # type: ignore
         """
         On first call (mask), computes crop. On subsequent (image), just applies.
         Raises if mask not provided first.

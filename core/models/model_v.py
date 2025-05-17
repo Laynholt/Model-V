@@ -1,8 +1,7 @@
-from typing import List, Optional
-
 import torch
-import torch.nn as nn
+from torch import nn
 
+from typing import Any
 from segmentation_models_pytorch import MAnet
 from segmentation_models_pytorch.base.modules import Activation
 
@@ -15,18 +14,18 @@ class ModelVParams(BaseModel):
     model_config = ConfigDict(frozen=True)
     
     encoder_name: str = "mit_b5"                               # Default encoder
-    encoder_weights: Optional[str] = "imagenet"                # Pre-trained weights
-    decoder_channels: List[int] = [1024, 512, 256, 128, 64]    # Decoder configuration
+    encoder_weights: str | None = "imagenet"                   # Pre-trained weights
+    decoder_channels: list[int] = [1024, 512, 256, 128, 64]    # Decoder configuration
     decoder_pab_channels: int = 256                            # Decoder Pyramid Attention Block channels
     in_channels: int = 3                                       # Number of input channels
     out_classes: int = 1                                       # Number of output classes
     
-    def asdict(self):
+    def asdict(self) -> dict[str, Any]:
         """
         Returns a dictionary of valid parameters for `nn.ModelV`.
 
         Returns:
-            Dict[str, Any]: Dictionary of parameters for nn.ModelV.
+            dict(str, Any): Dictionary of parameters for nn.ModelV.
         """
         loss_kwargs = self.model_dump()
         return {k: v for k, v in loss_kwargs.items() if v is not None}  # Remove None values
@@ -84,11 +83,11 @@ class DeepSegmentationHead(nn.Sequential):
         in_channels: int,
         out_channels: int,
         kernel_size: int = 3,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         upsampling: int = 1,
     ) -> None:
         # Define a sequence of layers for the segmentation head
-        layers: List[nn.Module] = [
+        layers: list[nn.Module] = [
             nn.Conv2d(
                 in_channels,
                 in_channels // 2,

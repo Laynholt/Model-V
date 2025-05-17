@@ -1,6 +1,6 @@
 from .cell_aware import IntensityDiversification
-from .load_image import CustomLoadImage, CustomLoadImaged
-from .normalize_image import CustomNormalizeImage, CustomNormalizeImaged
+from .load_image import CustomLoadImaged
+from .normalize_image import CustomNormalizeImaged
 
 from monai.transforms import * # type: ignore
 

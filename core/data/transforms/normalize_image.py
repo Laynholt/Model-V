@@ -2,7 +2,7 @@ import numpy as np
 from skimage import exposure
 from monai.config.type_definitions import KeysCollection
 from monai.transforms.transform import Transform, MapTransform
-from typing import Dict, Hashable, Mapping, Sequence
+from typing import Hashable, Mapping, Sequence
 
 __all__ = [
     "CustomNormalizeImage",
@@ -23,7 +23,7 @@ class CustomNormalizeImage(Transform):
     def __init__(self, percentiles: Sequence[float] = (0, 99), channel_wise: bool = False) -> None:
         """
         Args:
-            percentiles (Sequence[float]): Lower and upper percentiles used for intensity scaling.
+            percentiles (Sequence(float)): Lower and upper percentiles used for intensity scaling.
                                            Default is (0, 99).
             channel_wise (bool): Whether to apply normalization on each channel individually.
                                  Default is False.
@@ -106,7 +106,7 @@ class CustomNormalizeImaged(MapTransform):
         """
         Args:
             keys (KeysCollection): Keys identifying the image entries in the dictionary.
-            percentiles (Sequence[float]): Lower and upper percentiles used for intensity scaling.
+            percentiles (Sequence(float)): Lower and upper percentiles used for intensity scaling.
                                            Default is (1, 99).
             channel_wise (bool): Whether to apply normalization on each channel individually.
                                  Default is False.
@@ -117,7 +117,7 @@ class CustomNormalizeImaged(MapTransform):
         # Create an instance of the normalization transform with specified parameters.
         self.normalizer: CustomNormalizeImage = CustomNormalizeImage(percentiles, channel_wise)
 
-    def __call__(self, data: Mapping[Hashable, np.ndarray]) -> Dict[Hashable, np.ndarray]:
+    def __call__(self, data: Mapping[Hashable, np.ndarray]) -> dict[Hashable, np.ndarray]:
         """
         Apply the normalization transform to each image in the input dictionary.
 
@@ -125,10 +125,10 @@ class CustomNormalizeImaged(MapTransform):
             data (Mapping[Hashable, np.ndarray]): A dictionary mapping keys to numpy arrays representing images.
 
         Returns:
-            Dict[Hashable, np.ndarray]: A dictionary with the same keys where the images have been normalized.
+            dict(Hashable, np.ndarray): A dictionary with the same keys where the images have been normalized.
         """
         # Copy the input dictionary to avoid modifying the original data.
-        d: Dict[Hashable, np.ndarray] = dict(data)
+        d: dict[Hashable, np.ndarray] = dict(data)
         # Iterate over each key specified in the transform and normalize the corresponding image.
         for key in self.keys:
             d[key] = self.normalizer(d[key])

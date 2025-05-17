@@ -1,7 +1,7 @@
 import copy
 import torch
 import numpy as np
-from typing import Dict, Sequence, Tuple, Union
+from typing import Sequence
 from skimage.segmentation import find_boundaries
 from monai.transforms import RandScaleIntensity, Compose, MapTransform # type: ignore
 
@@ -26,14 +26,14 @@ class BoundaryExclusion(MapTransform):
     def __init__(self, keys: Sequence[str] = ("mask",), allow_missing_keys: bool = False) -> None:
         """
         Args:
-            keys (Sequence[str]): Keys in the input dictionary corresponding to the label image.
+            keys (Sequence(str)): Keys in the input dictionary corresponding to the label image.
                                   Default is ("mask",).
             allow_missing_keys (bool): If True, missing keys in the input will be ignored.
                                        Default is False.
         """
         super().__init__(keys=keys, allow_missing_keys=allow_missing_keys)
 
-    def __call__(self, data: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def __call__(self, data: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
         """
         Apply the boundary exclusion transform to the label image.
 
@@ -46,10 +46,10 @@ class BoundaryExclusion(MapTransform):
           6. Assigning the transformed label back into the input dictionary.
 
         Args:
-            data (Dict[str, np.ndarray]): Dictionary containing at least the "mask" key with a label image.
+            data (Dict(str, np.ndarray)): Dictionary containing at least the "mask" key with a label image.
 
         Returns:
-            Dict[str, np.ndarray]: The input dictionary with the "mask" key updated after boundary exclusion.
+            Dict(str, np.ndarray): The input dictionary with the "mask" key updated after boundary exclusion.
         """
         # Retrieve the original label image.
         label_original: np.ndarray = data["mask"]
@@ -100,17 +100,17 @@ class IntensityDiversification(MapTransform):
         self,
         keys: Sequence[str] = ("image",),
         change_cell_ratio: float = 0.4,
-        scale_factors: Union[Tuple[float, float], float] = (0.0, 0.7),
+        scale_factors: tuple[float, float] | float = (0.0, 0.7),
         allow_missing_keys: bool = False,
     ) -> None:
         """
         Args:
-            keys (Sequence[str]): Keys in the input dictionary corresponding to the image.
+            keys (Sequence(str)): Keys in the input dictionary corresponding to the image.
                                   Default is ("image",).
             change_cell_ratio (float): Ratio of cells to apply the intensity scaling.
                                        For example, 0.4 means 40% of the cells will be transformed.
                                        Default is 0.4.
-            scale_factors (Sequence[float]): Factors used for random intensity scaling.
+            scale_factors (tuple(float, float) | float): Factors used for random intensity scaling.
                                              Default is (0.0, 0.7).
             allow_missing_keys (bool): If True, missing keys in the input will be ignored.
                                        Default is False.
@@ -120,7 +120,7 @@ class IntensityDiversification(MapTransform):
         # Compose a random intensity scaling transform with 100% probability.
         self.randscale_intensity = Compose([RandScaleIntensity(prob=1.0, factors=scale_factors)])
 
-    def __call__(self, data: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def __call__(self, data: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
         """
         Apply a cell-wise intensity diversification transform to an input image.
 
@@ -141,12 +141,12 @@ class IntensityDiversification(MapTransform):
         9. Combine the unchanged and modified parts to update the image for that channel.
 
         Args:
-            data (Dict[str, np.ndarray]): A dictionary containing:
+            data (dict(str, np.ndarray)): A dictionary containing:
                 - "image": The original image array.
                 - "mask": The corresponding cell label image array.
 
         Returns:
-            Dict[str, np.ndarray]: The updated dictionary with the "image" key modified after applying 
+            dict(str, np.ndarray): The updated dictionary with the "image" key modified after applying 
                                 the intensity transformation.
 
         Raises:
