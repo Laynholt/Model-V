@@ -6,7 +6,7 @@ This code is adapted from the following codes:
 import numpy as np
 from numpy.typing import NDArray
 from numba import jit
-from skimage import segmentation
+import fastremap
 from scipy.optimize import linear_sum_assignment
 from typing import Any
 
@@ -140,6 +140,9 @@ def compute_segmentation_tp_fp_fn(
     # If the masks are 2D, add a singleton channel dimension.
     ground_truth_mask = _ensure_ndim(ground_truth_mask, 3, insert_position=0)
     predicted_mask = _ensure_ndim(predicted_mask, 3, insert_position=0)
+
+    ground_truth_mask, _ = fastremap.renumber(ground_truth_mask)
+    predicted_mask, _ = fastremap.renumber(predicted_mask)
 
     num_channels = ground_truth_mask.shape[0]
     true_positive_list = []
@@ -781,7 +784,7 @@ def _remove_boundary_objects(mask: np.ndarray) -> np.ndarray:
     mask[np.isin(mask, border_labels[1:])] = 0
     
     # Reindex the mask so that labels are sequential.
-    new_mask, _, _ = segmentation.relabel_sequential(mask)
+    new_mask, _ = fastremap.renumber(mask)
     return new_mask
 
 
