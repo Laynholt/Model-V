@@ -648,6 +648,8 @@ class CellSegmentator:
         logger.info(f"├─ Seed: {common.seed}")
         logger.info(f"├─ Device: {common.device}")
         logger.info(f"├─ Use AMP: {'yes' if common.use_amp else 'no'}")
+        logger.info(f"├─ ROI size: {common.roi_size}")
+        logger.info(f"├─ Remove boundary objects: {'yes' if common.remove_boundary_objects else 'no'}")
         logger.info(f"├─ Masks subdirectory: {common.masks_subdir}")
         logger.info(f"└─ Predictions output dir: {common.predictions_dir}")
         logger.info(f"├─ Pretrained weights: {common.pretrained_weights or 'None'}")
@@ -1124,7 +1126,7 @@ class CellSegmentator:
             batch_prediction=predicted_masks,
             iou_threshold=iou_threshold,
             return_error_masks=return_error_masks,
-            remove_boundary_objects=True
+            remove_boundary_objects=self._dataset_setup.common.remove_boundary_objects
         )
         tp = stats["tp"]
         fp = stats["fp"]

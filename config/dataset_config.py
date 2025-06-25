@@ -11,6 +11,7 @@ class DatasetCommonConfig(BaseModel):
     device: str = "cuda:0"          # Device used for training/testing (e.g., 'cpu' or 'cuda')
     use_amp: bool = False           # Flag to use Automatic Mixed Precision (AMP)
     roi_size: int = 512             # The size of the square window for cropping
+    remove_boundary_objects: bool = True    # Flag to remove boundary objects when testing
     masks_subdir: str = ""          # Subdirectory where the required masks are located, e.g. 'masks/cars'
     predictions_dir: str = "."      # Directory to save predictions
     pretrained_weights: str = ""    # Path to pretrained weights
