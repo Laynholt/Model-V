@@ -127,7 +127,7 @@ python main.py [-c CONFIG] [-m {train,test,predict}] [--no-save-masks] [--only-m
 * `-c, --config` : Path to JSON config file (default: `config/templates/train/...json`).
 * `-m, --mode`   : `train`, `test`, or `predict` (default: `train`).
 * `--no-save-masks` : Disable saving predicted masks.
-* `--only-masks`    : Save only raw predicted masks (no visual overlays).
+* `--only-masks`    : Save only raw predicted masks (no visual overlays). This flag depends on `--no-save-masks`.
 
 ### Workflow
 
@@ -149,6 +149,8 @@ A brief overview of the key parameters you can adjust in your JSON config:
 * `seed` (int): Random seed for data splitting and reproducibility (default: `0`).
 * `device` (str): Compute device to use, e.g., `'cuda:0'` or `'cpu'` (default: `'cuda:0'`).
 * `use_amp` (bool): Enable Automatic Mixed Precision for faster training (default: `false`).
+* `roi_size` (int): Defines the size of the square Region of Interest (ROI) used for cropping during training. This same size is also applied for the sliding window inference during validation and testing (default: `512`).
+* `remove_boundary_objects` (bool): Flag to remove boundary objects when testing (default: `True`).
 * `masks_subdir` (str): Name of subdirectory under `masks/` containing the instance masks (default: `""`).
 * `predictions_dir` (str): Output directory for saving predicted masks (default: `"."`).
 * `pretrained_weights` (str): Path to pretrained model weights (default: `""`).
