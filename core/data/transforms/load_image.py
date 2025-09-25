@@ -30,6 +30,15 @@ __all__ = [
 SUPPORTED_IMAGE_FORMATS: Final[Sequence[str]] = ["tif", "tiff", "png", "jpg", "bmp", "jpeg"]
 
 
+class InvalidImageDataError(Exception):
+    """
+    Exception for inappropriate image data.
+    Suitable for cases where the number of axes is > 3,
+    which this reader does not support without explicit preprocessing.
+    """
+    pass
+
+
 class CustomLoadImage(LoadImage):
     """
     Class for loading one or multiple images from a given path.
@@ -193,6 +202,13 @@ class UniversalImageReader(NumpyReader):
             if img_array.ndim == 2:
                 # If the image is 2D (height, width), add a new axis at the end to represent the channel
                 img_array = np.expand_dims(img_array, axis=-1)
+            elif img_array.ndim > 3:
+                raise InvalidImageDataError(
+                    f"Unsupported image dimensionality for '{name}': ndim={img_array.ndim}, "
+                    f"shape={getattr(img_array, 'shape', None)}. "
+                    "Expected 2D (H, W) or 3D (H, W, C)."
+                    "Please pre-process (e.g., select slice or merge channels) before loading."
+                ) 
 
             images.append(img_array)
 
