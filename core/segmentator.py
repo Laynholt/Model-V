@@ -749,7 +749,7 @@ class CellSegmentator:
         """
         # Collect sorted list of image paths
         images = sorted(
-            chain(glob.glob(
+            chain.from_iterable(glob.glob(
                 os.path.join(images_dir, f'*.{ext}')) for ext in SUPPORTED_IMAGE_FORMATS
             )
         )
@@ -759,7 +759,7 @@ class CellSegmentator:
         if masks_dir is not None:
             # Collect and validate sorted list of mask paths
             masks = sorted(
-                chain(glob.glob(
+                chain.from_iterable(glob.glob(
                     os.path.join(masks_dir, f'*.{ext}')) for ext in SUPPORTED_IMAGE_FORMATS
                 )
             )
