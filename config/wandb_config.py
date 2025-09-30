@@ -11,6 +11,7 @@ class WandbConfig(BaseModel):
     group: str | None = None        # WandB group name
     entity: str | None = None       # WandB entity (user or team)
     name: str | None = None         # Name of the run
+    id: str | None = None           # Id of the run
     tags: list[str] | None = None   # List of tags for the run
     notes: str | None = None        # Notes or description for the run
     save_code: bool = True          # Whether to save the code to WandB
