@@ -160,6 +160,8 @@ A brief overview of the key parameters you can adjust in your JSON config:
 * `is_split` (bool): Whether your data is already split (`true`) or needs splitting (`false`, default).
 * `split` / `pre_split`: Directories for data when pre-split or unsplit.
 * `train_size`, `valid_size`, `test_size` (int/float): Size or ratio of your splits (e.g., `0.7`, `0.1`, `0.2`).
+* `train_offset`, `valid_offset`, `test_offset` (int/float): The offset by which to take samples. When the data is not split, the samples are formed in the following order: `train`, `valid`, `test` (default: `0`, `0`, `0`).
+* `shuffle` (bool): Flag for shuffling data when creating samples (default: `false`).
 * `batch_size` (int): Number of samples per training batch (default: `1`).
 * `num_epochs` (int): Total training epochs (default: `100`).
 * `val_freq` (int): Frequency (in epochs) to run validation (default: `1`).
@@ -168,6 +170,7 @@ A brief overview of the key parameters you can adjust in your JSON config:
 
 * `test_dir` (str): Directory containing test data (default: `"."`).
 * `test_size` (int/float): Portion or count of data for testing (default: `1.0`).
+* `test_offset` (int/float): The amount of data by which the sample will be shifted before forming (default: `0`).
 * `shuffle` (bool): Shuffle test data before evaluation (default: `true`).
 
 > **Batch size note:** Validation, testing, and prediction runs always use a batch size of `1`, regardless of the `batch_size` setting in the training configuration.
@@ -190,11 +193,21 @@ python generate_config.py
 python main.py -c config/templates/train/YourConfig.json -m train
 ```
 
+> After training, the model will automatically attempt to perform testing if the directory for the test data was specified in the configuration file.
+
+### Test a model
+
+```bash
+python main.py -c config/templates/predict/YourConfig.json -m test
+```
+
 ### Predict on new data
 
 ```bash
 python main.py -c config/templates/predict/YourConfig.json -m predict
 ```
+
+> Unlike prediction testing, it is not necessary that the specified test directory contains a folder with true masks.
 
 ---
 

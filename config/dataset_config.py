@@ -9,7 +9,7 @@ class DatasetCommonConfig(BaseModel):
     """
     seed: int | None = 0            # Seed for splitting if data is not pre-split (and all random operations)
     device: str = "cuda:0"          # Device used for training/testing (e.g., 'cpu' or 'cuda')
-    use_amp: bool = False           # Flag to use Automatic Mixed Precision (AMP)
+    use_amp: bool = True            # Flag to use Automatic Mixed Precision (AMP)
     roi_size: int = 512             # The size of the square window for cropping
     remove_boundary_objects: bool = True    # Flag to remove boundary objects when testing
     masks_subdir: str = ""          # Subdirectory where the required masks are located, e.g. 'masks/cars'
@@ -34,7 +34,6 @@ class TrainingSplitInfo(BaseModel):
     Contains:
         - all_data_dir: Directory containing all data.
     """
-    shuffle: bool = True             # Shuffle data before splitting
     all_data_dir: str = "."          # Directory containing all data if not pre-split
 
 class TrainingPreSplitInfo(BaseModel):
@@ -69,30 +68,31 @@ class DatasetTrainingConfig(BaseModel):
     train_size: int | float = 0.7    # Training data size (int for static, float in (0,1] for dynamic)
     valid_size: int | float = 0.1    # Validation data size (int for static, float in (0,1] for dynamic)
     test_size: int | float = 0.2     # Testing data size (int for static, float in (0,1] for dynamic)
-    train_offset: int = 0           # Offset for training data
-    valid_offset: int = 0           # Offset for validation data
-    test_offset: int = 0            # Offset for testing data 
+    train_offset: int | float = 0           # Offset for training data (int for static, float in (0,1] for dynamic)
+    valid_offset: int | float = 0           # Offset for validation data (int for static, float in (0,1] for dynamic)
+    test_offset: int | float = 0            # Offset for testing data (int for static, float in (0,1] for dynamic)
 
+    shuffle: bool = False           # Shuffle data
     batch_size: int = 1             # Batch size for training
     num_epochs: int = 100           # Number of training epochs
     val_freq: int = 1               # Frequency of validation during training
 
 
-    @field_validator("train_size", "valid_size", "test_size", mode="before")
-    def validate_sizes(cls, v: int | float) -> int | float:
+    @field_validator("train_size", "valid_size", "test_size", "train_offset", "valid_offset", "test_offset", mode="before")
+    def validate_sizes_and_offsets(cls, v: int | float) -> int | float:
         """
-        Validates size values:
+        Validates size and offset values:
         - If provided as a float, must be in the range (0, 1].
         - If provided as an int, must be non-negative.
         """
         if isinstance(v, float):
             if not (0 <= v <= 1):
-                raise ValueError("When provided as a float, size must be in the range (0, 1]")
+                raise ValueError("When provided as a float, size and offset must be in the range [0, 1]")
         elif isinstance(v, int):
             if v < 0:
-                raise ValueError("When provided as an int, size must be non-negative")
+                raise ValueError("When provided as an int, size and offset must be non-negative")
         else:
-            raise ValueError("Size must be either an int or a float")
+            raise ValueError("Size and offset must be either an int or a float")
         return v
 
     @model_validator(mode="after")
@@ -102,10 +102,6 @@ class DatasetTrainingConfig(BaseModel):
           - If is_split is True, validates pre_split (train_dir must be non-empty and exist; if provided, valid_dir and test_dir must exist).
           - If is_split is False, validates split (all_data_dir must be non-empty and exist).
         """
-        if any(isinstance(s, float) for s in (self.train_size, self.valid_size, self.test_size)):
-            if (self.train_size + self.valid_size + self.test_size) > 1 and not self.is_split:
-                raise ValueError("The total sample size with dynamically defined sizes must be <= 1")
-        
         if not self.is_split:
             if not self.split.all_data_dir:
                 raise ValueError("When is_split is False, all_data_dir must be provided and non-empty in pre_split")
@@ -128,7 +124,6 @@ class DatasetTrainingConfig(BaseModel):
         Validates numeric fields:
         - batch_size and num_epochs must be > 0.
         - val_freq must be >= 0.
-        - offsets must be >= 0.
         """
         if self.batch_size <= 0:
             raise ValueError("batch_size must be > 0")
@@ -136,8 +131,6 @@ class DatasetTrainingConfig(BaseModel):
             raise ValueError("num_epochs must be > 0")
         if self.val_freq < 0:
             raise ValueError("val_freq must be >= 0")
-        if self.train_offset < 0 or self.valid_offset < 0 or self.test_offset < 0:
-            raise ValueError("offsets must be >= 0")
         return self
 
 
@@ -145,35 +138,25 @@ class DatasetTestingConfig(BaseModel):
     """
     Configuration fields used only in testing mode.
     """
-    test_dir: str = "."                    # Test data directory; must be non-empty
-    test_size: int | float = 1.0     # Testing data size (int for static, float in (0,1] for dynamic)
-    test_offset: int = 0                # Offset for testing data 
+    test_dir: str = "."                 # Test data directory; must be non-empty
+    test_size: int | float = 1.0        # Testing data size (int for static, float in (0,1] for dynamic)
+    test_offset: int | float = 0        # Offset for testing data 
     shuffle: bool = True                # Shuffle data
 
-    @field_validator("test_size", mode="before")
-    def validate_test_size(cls, v: int | float) -> int | float:
+    @field_validator("test_size", "test_offset", mode="before")
+    def validate_test_size_and_offset(cls, v: int | float) -> int | float:
         """
         Validates the test_size value.
         """
         if isinstance(v, float):
             if not (0 < v <= 1):
-                raise ValueError("When provided as a float, test_size must be in the range (0, 1]")
+                raise ValueError("When provided as a float, test_size and test_offset must be in the range (0, 1]")
         elif isinstance(v, int):
             if v < 0:
-                raise ValueError("When provided as an int, test_size must be non-negative")
+                raise ValueError("When provided as an int, test_size and test_offset must be non-negative")
         else:
-            raise ValueError("test_size must be either an int or a float")
+            raise ValueError("test_size and test_offset must be either an int or a float")
         return v
-    
-    @model_validator(mode="after")
-    def validate_numeric_fields(self) -> "DatasetTestingConfig":
-        """
-        Validates numeric fields:
-        - test_offset must be >= 0.
-        """
-        if self.test_offset < 0:
-            raise ValueError("test_offset must be >= 0")
-        return self
 
     @model_validator(mode="after")
     def validate_testing(self) -> "DatasetTestingConfig":
@@ -185,8 +168,6 @@ class DatasetTestingConfig(BaseModel):
             raise ValueError("In testing configuration, test_dir must be provided and non-empty")
         if not os.path.exists(self.test_dir):
             raise ValueError(f"Path for test_dir does not exist: {self.test_dir}")
-        if self.test_offset < 0:
-            raise ValueError("test_offset must be >= 0")
         return self
 
 

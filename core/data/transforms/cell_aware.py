@@ -7,13 +7,20 @@ from monai.transforms import RandScaleIntensity, Compose, MapTransform # type: i
 
 from core.logger import get_logger
 
-__all__ = ["BoundaryExclusion", "IntensityDiversification"]
+__all__ = [
+    "BoundaryExclusiond",
+    "BoundaryExclusionD",
+    "BoundaryExclusionDict",
+    "IntensityDiversificationd",
+    "IntensityDiversificationD",
+    "IntensityDiversificationDict"
+]
 
 
 logger = get_logger(__name__)
 
 
-class BoundaryExclusion(MapTransform):
+class BoundaryExclusiond(MapTransform):
     """
     Map the cell boundary pixel labels to the background class (0).
 
@@ -87,7 +94,7 @@ class BoundaryExclusion(MapTransform):
         return data
 
 
-class IntensityDiversification(MapTransform):
+class IntensityDiversificationd(MapTransform):
     """
     Randomly rescale the intensity of cell pixels.
 
@@ -202,3 +209,7 @@ class IntensityDiversification(MapTransform):
             data["image"][c] = img_orig + img_changed
 
         return data
+
+
+BoundaryExclusionD = BoundaryExclusionDict = BoundaryExclusiond
+IntensityDiversificationD = IntensityDiversificationDict = IntensityDiversificationd

@@ -1,10 +1,8 @@
 import numpy as np
-import tifffile as tif
-import skimage.io as io
+import imageio.v3 as iio
 from typing import Final, Sequence, Type
 
 from monai.utils.enums import PostFix
-from monai.utils.module import optional_import
 from monai.utils.misc import ensure_tuple, ensure_tuple_rep
 from monai.data.utils import is_supported_format
 from monai.data.image_reader import ImageReader, NumpyReader
@@ -14,9 +12,6 @@ from monai.config.type_definitions import DtypeLike, PathLike, KeysCollection
 
 # Default value for metadata postfix
 DEFAULT_POST_FIX = PostFix.meta()
-
-# Try to import ITK library; if not available, has_itk will be False
-itk, has_itk = optional_import("itk", allow_namespace_pkg=True)
 
 
 __all__ = [
@@ -142,9 +137,7 @@ class UniversalImageReader(NumpyReader):
     Universal image reader for TIFF, PNG, JPG, BMP, etc.
     
     Uses:
-      - tifffile for reading TIFF files.
-      - ITK (if available) for reading other formats.
-      - skimage.io for reading if the previous methods fail.
+      - imageio.v3 for reading files.
       
     The image is loaded with its original number of channels (layers) without forced modifications
     (e.g., repeating or cropping channels).
@@ -162,7 +155,7 @@ class UniversalImageReader(NumpyReader):
         
         Supported extensions: tif, tiff, png, jpg, bmp, jpeg.
         """
-        return has_itk or is_supported_format(filename, SUPPORTED_IMAGE_FORMATS)
+        return is_supported_format(filename, SUPPORTED_IMAGE_FORMATS)
 
     def read(self, data: Sequence[PathLike] | PathLike, **kwargs):
         """
@@ -186,17 +179,17 @@ class UniversalImageReader(NumpyReader):
         for name in filenames:
             # Convert file name to string
             name = f"{name}"
-            # If the file has a .tif or .tiff extension (case-insensitive), use tifffile for reading
-            if name.lower().endswith((".tif", ".tiff")):
-                img_array = tif.imread(name)
-            else:
-                # Attempt to read the image using ITK (if available)
-                try:
-                    img_itk = itk.imread(name, **kwargs_)
-                    img_array = itk.array_view_from_image(img_itk, keep_axes=False)
-                except Exception:
-                    # If ITK fails, use skimage.io for reading
-                    img_array = io.imread(name)
+            
+            img_array = iio.imread(name, **kwargs)
+            # copy only if needed: not contiguous, not writeable, or is a view
+            needs_copy = (
+                not img_array.flags["C_CONTIGUOUS"]
+                or not img_array.flags["WRITEABLE"]
+                or (img_array.base is not None)  # likely a view on another object/buffer
+            )
+            if needs_copy:
+                # Ensure NumPy owns the buffer to avoid backend-held memory.
+                img_array = np.array(img_array, copy=True, order="C")
 
             # Check the number of dimensions (axes) of the loaded image
             if img_array.ndim == 2:

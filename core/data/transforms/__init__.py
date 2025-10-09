@@ -1,4 +1,4 @@
-from .cell_aware import IntensityDiversification
+from .cell_aware import IntensityDiversificationd
 from .load_image import CustomLoadImaged
 from .normalize_image import CustomNormalizeImaged
 
@@ -66,7 +66,7 @@ def get_train_transforms(roi_size: int = 512):
             # Randomly rotate the image and label by 90 degrees.
             RandRotate90d(keys=["image", "mask"], prob=0.5, spatial_axes=(0, 1)),
             # Diversify intensities for selected cell regions.
-            IntensityDiversification(keys=["image", "mask"], allow_missing_keys=True),
+            IntensityDiversificationd(keys=["image", "mask"], allow_missing_keys=True),
             # Apply random Gaussian noise to the image.
             RandGaussianNoised(keys=["image"], prob=0.25, mean=0, std=0.1),
             # Randomly adjust the contrast of the image.

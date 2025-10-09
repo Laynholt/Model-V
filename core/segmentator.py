@@ -126,12 +126,28 @@ class CellSegmentator:
                 train_dir = self._dataset_setup.training.pre_split.train_dir
                 valid_dir = self._dataset_setup.training.pre_split.valid_dir
                 test_dir = self._dataset_setup.training.pre_split.test_dir
+                
+                train_number_of_images = len(os.listdir(os.path.join(train_dir, 'images')))
+                valid_number_of_images = len(os.listdir(os.path.join(valid_dir, 'images')))
+                test_number_of_images = len(os.listdir(os.path.join(test_dir, 'images')))
 
-                train_offset = self._dataset_setup.training.train_offset
-                valid_offset = self._dataset_setup.training.valid_offset
-                test_offset = self._dataset_setup.training.test_offset
+                train_offset = (
+                    self._dataset_setup.training.train_offset
+                    if isinstance(self._dataset_setup.training.train_offset, int)
+                    else int(train_number_of_images * self._dataset_setup.training.train_offset)
+                )
+                valid_offset = (
+                    self._dataset_setup.training.valid_offset
+                    if isinstance(self._dataset_setup.training.valid_offset, int)
+                    else int(valid_number_of_images * self._dataset_setup.training.valid_offset)
+                )
+                test_offset = (
+                    self._dataset_setup.training.test_offset
+                    if isinstance(self._dataset_setup.training.test_offset, int)
+                    else int(test_number_of_images * self._dataset_setup.training.test_offset)
+                )
 
-                shuffle = False
+                shuffle = self._dataset_setup.training.shuffle
             else:
                 # Same validation for split mode with full data directory
                 if (
@@ -160,11 +176,23 @@ class CellSegmentator:
                     else int(number_of_images * self._dataset_setup.training.valid_size)
                 )
 
-                train_offset = self._dataset_setup.training.train_offset
-                valid_offset = self._dataset_setup.training.valid_offset + train_size
-                test_offset = self._dataset_setup.training.test_offset + train_size + valid_size
+                train_offset = (
+                    self._dataset_setup.training.train_offset
+                    if isinstance(self._dataset_setup.training.train_offset, int)
+                    else int(number_of_images * self._dataset_setup.training.train_offset)
+                )
+                valid_offset = (
+                    self._dataset_setup.training.valid_offset
+                    if isinstance(self._dataset_setup.training.valid_offset, int)
+                    else int(number_of_images * self._dataset_setup.training.valid_offset)
+                ) + train_size + train_offset
+                test_offset = (
+                    self._dataset_setup.training.test_offset
+                    if isinstance(self._dataset_setup.training.test_offset, int)
+                    else int(number_of_images * self._dataset_setup.training.test_offset)
+                ) + valid_offset + valid_size
 
-                shuffle = True
+                shuffle = self._dataset_setup.training.shuffle
 
             # Train dataloader
             train_dataset = self.__get_dataset(
@@ -370,7 +398,7 @@ class CellSegmentator:
                     self.__print_with_logging(valid_metrics, epoch)
 
                     # Update best model on improved F1
-                    f1 = valid_metrics.get("valid_f1_score", 0.0)
+                    f1 = valid_metrics.get("valid_f1_score_micro", 0.0)
                     if f1 > best_f1_score:
                         best_f1_score = f1
                         # Deep copy weights to avoid reference issues
@@ -426,7 +454,7 @@ class CellSegmentator:
             ):
                 # Disable gradient computation for inference
                 with torch.no_grad():
-                    # Run the model’s forward pass in ‘predict’ mode
+                    # Run the model's forward pass in 'predict' mode
                     raw_output = self.__run_inference(inputs, mode="predict")
 
                     # Convert logits/probabilities to discrete instance masks
@@ -451,7 +479,7 @@ class CellSegmentator:
         - If training is enabled in the dataset setup, start training.  
         - Otherwise, if a test DataLoader is provided, run evaluation.  
         - Else if a prediction DataLoader is provided, run inference/prediction.  
-        - If neither loader is available in non‐training mode, raise an error.
+        - If neither loader is available in non-training mode, raise an error.
         
         Args:
             save_results (bool): If True, the predicted masks and test metrics will be saved.
@@ -481,7 +509,7 @@ class CellSegmentator:
             else:
                 # 3) ERROR: no appropriate loader found
                 raise RuntimeError(
-                    "Neither test nor predict DataLoader is set for non‐training mode."
+                    "Neither test nor predict DataLoader is set for non-training mode."
                 )
 
         elapsed = time.time() - start_time
@@ -652,6 +680,7 @@ class CellSegmentator:
         if config.dataset_config.is_training:
             training = config.dataset_config.training
             logger.info("[MODE] Training")
+            logger.info(f"├─ Shuffle: {'yes' if training.shuffle else 'no'}")
             logger.info(f"├─ Batch size: {training.batch_size}")
             logger.info(f"├─ Epochs: {training.num_epochs}")
             logger.info(f"├─ Validation frequency: {training.val_freq}")
@@ -664,7 +693,6 @@ class CellSegmentator:
             else:
                 logger.info( "├─ Using unified dataset with splits:")
                 logger.info( "│  ├─ All data dir: {training.split.all_data_dir}")
-                logger.info(f"│  └─ Shuffle: {'yes' if training.split.shuffle else 'no'}")
 
             logger.info( "└─ Dataset split:")
             logger.info(f"   ├─ Train size: {training.train_size}, offset: {training.train_offset}")
@@ -780,6 +808,7 @@ class CellSegmentator:
 
         # Shuffle image-mask pairs if requested
         if shuffle:
+            self.__set_seed(self._dataset_setup.common.seed)
             if masks_dir is not None:
                 combined = list(zip(images, masks))  # type: ignore
                 random.shuffle(combined)
@@ -1001,14 +1030,26 @@ class CellSegmentator:
             fp_array = np.vstack(all_fp)
             fn_array = np.vstack(all_fn)
             
-            epoch_metrics[f"{mode}_f1_score"] = self.__compute_f1_metric(
+            epoch_metrics[f"{mode}_f1_score_micro"] = self.__compute_f1_metric(
                 tp_array, fp_array, fn_array, reduction="micro"
             )
             epoch_metrics[f"{mode}_f1_score_iw"] = self.__compute_f1_metric(
                 tp_array, fp_array, fn_array, reduction="imagewise"
             )
-            epoch_metrics[f"{mode}_mAP"] = self.__compute_average_precision_metric(
+            epoch_metrics[f"{mode}_f1_score_pc"] = self.__compute_f1_metric(
+                tp_array, fp_array, fn_array, reduction="per_class"
+            )
+            epoch_metrics[f"{mode}_f1_score_macro"] = self.__compute_f1_metric(
                 tp_array, fp_array, fn_array, reduction="macro"
+            )
+            epoch_metrics[f"{mode}_mAP_micro"] = self.__compute_average_precision_metric(
+                tp_array, fp_array, fn_array, reduction="micro"
+            )
+            epoch_metrics[f"{mode}_mAP_macro"] = self.__compute_average_precision_metric(
+                tp_array, fp_array, fn_array, reduction="macro"
+            )
+            epoch_metrics[f"{mode}_mAP_pc"] = self.__compute_average_precision_metric(
+                tp_array, fp_array, fn_array, reduction="per_class"
             )
 
         return epoch_metrics
