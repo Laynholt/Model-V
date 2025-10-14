@@ -256,13 +256,20 @@ class CellSegmentator:
             test_images = os.path.join(self._dataset_setup.testing.test_dir, 'images')
             test_masks = os.path.join(self._dataset_setup.testing.test_dir, 'masks', self._dataset_setup.common.masks_subdir)
 
+            number_of_images = len(os.listdir(test_images))
+            test_offset = (
+                self._dataset_setup.training.test_offset
+                if isinstance(self._dataset_setup.training.test_offset, int)
+                else int(number_of_images * self._dataset_setup.training.test_offset)
+            )
+
             if test_transforms is not None:
                 test_dataset = self.__get_dataset(
                     images_dir=test_images,
                     masks_dir=test_masks,
                     transforms=test_transforms,
                     size=self._dataset_setup.testing.test_size,
-                    offset=self._dataset_setup.testing.test_offset,
+                    offset=test_offset,
                     shuffle=self._dataset_setup.testing.shuffle
                 )
                 self._test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
@@ -274,7 +281,7 @@ class CellSegmentator:
                     masks_dir=None,
                     transforms=predict_transforms,
                     size=self._dataset_setup.testing.test_size,
-                    offset=self._dataset_setup.testing.test_offset,
+                    offset=test_offset,
                     shuffle=self._dataset_setup.testing.shuffle
                 )
                 self._predict_dataloader = DataLoader(predict_dataset, batch_size=1, shuffle=False)
@@ -982,7 +989,7 @@ class CellSegmentator:
                         tp, fp, fn, tp_masks, fp_masks, fn_masks = self.__compute_stats(
                             predicted_masks=preds,
                             ground_truth_masks=labels_post, # type: ignore
-                            iou_threshold=0.5,
+                            iou_threshold=self._dataset_setup.common.iou_threshold,
                             return_error_masks=(mode == "test") and save_results is True and not only_masks
                         )
                         all_tp.append(tp)
@@ -1120,9 +1127,10 @@ class CellSegmentator:
             instance_masks[idx] = self.__segment_instances(
                 probability_map=probabilities[idx],
                 flow=gradflow[idx],
-                prob_threshold=0.5,
-                flow_threshold=0.4,
-                min_object_size=15
+                prob_threshold=self._dataset_setup.common.gradient_flow.prob_threshold,
+                flow_threshold=self._dataset_setup.common.gradient_flow.flow_threshold,
+                num_iters=self._dataset_setup.common.gradient_flow.num_iters,
+                min_object_size=self._dataset_setup.common.gradient_flow.min_object_size
             )
 
         # Convert ground truth to numpy
@@ -2194,7 +2202,7 @@ class CellSegmentator:
         self,
         probability_map: np.ndarray,
         flow: np.ndarray,
-        prob_threshold: float = 0.0,
+        prob_threshold: float = 0.5,
         flow_threshold: float = 0.4,
         num_iters: int = 200,
         min_object_size: int = 15
@@ -2205,7 +2213,7 @@ class CellSegmentator:
         Args:
             probability_map: 3D array `(C, H, W)` of cell probabilities.
             flow: 3D array `(2*C, H, W)` of forward flow vectors.
-            prob_threshold: threshold to binarize probability_map. (Default 0.0)
+            prob_threshold: threshold to binarize probability_map. (Default 0.5)
             flow_threshold: threshold for filtering bad flow masks. (Default 0.4)
             num_iters: number of iterations for flow-following. (Default 200)
             min_object_size: minimum area to keep small instances. (Default 15)

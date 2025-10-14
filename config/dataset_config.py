@@ -3,6 +3,30 @@ from typing import Any
 import os
 
 
+class GradientFlowConfig(BaseModel):
+    """
+    Configuration related to gradient flow and instance postprocessing.
+    """
+    prob_threshold: float = 0.5     # Threshold to binarize probability map
+    flow_threshold: float = 0.4     # Threshold for filtering bad flow masks
+    num_iters: int = 200            # Number of iterations for flow-following
+    min_object_size: int = 15       # Minimum area to keep small instances
+
+    @model_validator(mode="after")
+    def validate_gradient_flow(self) -> "GradientFlowConfig":
+        """
+        Validates gradient flow configuration values.
+        """
+        if not (0.0 <= self.prob_threshold <= 1.0):
+            raise ValueError("prob_threshold must be between 0 and 1")
+        if not (0.0 <= self.flow_threshold <= 1.0):
+            raise ValueError("flow_threshold must be between 0 and 1")
+        if self.num_iters <= 0:
+            raise ValueError("num_iters must be > 0")
+        if self.min_object_size <= 0:
+            raise ValueError("min_object_size must be > 0")
+        return self
+
 class DatasetCommonConfig(BaseModel):
     """
     Common configuration fields shared by both training and testing.
@@ -11,6 +35,8 @@ class DatasetCommonConfig(BaseModel):
     device: str = "cuda:0"          # Device used for training/testing (e.g., 'cpu' or 'cuda')
     use_amp: bool = True            # Flag to use Automatic Mixed Precision (AMP)
     roi_size: int = 512             # The size of the square window for cropping
+    iou_threshold: float = 0.5      # Threshold for calculating iou (all other metrics use iou for calculations)
+    gradient_flow: GradientFlowConfig = GradientFlowConfig()
     remove_boundary_objects: bool = True    # Flag to remove boundary objects when testing
     masks_subdir: str = ""          # Subdirectory where the required masks are located, e.g. 'masks/cars'
     predictions_dir: str = "."      # Directory to save predictions

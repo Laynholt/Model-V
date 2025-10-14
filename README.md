@@ -150,10 +150,18 @@ A brief overview of the key parameters you can adjust in your JSON config:
 * `device` (str): Compute device to use, e.g., `'cuda:0'` or `'cpu'` (default: `'cuda:0'`).
 * `use_amp` (bool): Enable Automatic Mixed Precision for faster training (default: `false`).
 * `roi_size` (int): Defines the size of the square Region of Interest (ROI) used for cropping during training. This same size is also applied for the sliding window inference during validation and testing (default: `512`).
+* `iou_threshold` (float): Intersection over Union threshold used for metric computation. All detection and segmentation metrics are calculated based on this IoU value (default: `0.5`).
 * `remove_boundary_objects` (bool): Flag to remove boundary objects when testing (default: `True`).
 * `masks_subdir` (str): Name of subdirectory under `masks/` containing the instance masks (default: `""`).
 * `predictions_dir` (str): Output directory for saving predicted masks (default: `"."`).
 * `pretrained_weights` (str): Path to pretrained model weights (default: `""`).
+
+### Gradient Flow Settings (`gradient_flow`)
+
+* `prob_threshold` (float): Probability threshold for binarizing model outputs into masks. Pixels with probability values above this threshold are considered part of an object (default: `0.5`).
+* `flow_threshold` (float): Threshold for filtering unreliable flow vectors during instance mask reconstruction. Lower values allow more relaxed flow matching (default: `0.4`).
+* `num_iters` (int): Number of iterations used when following the flow field to reconstruct object instances (default: `200`).
+* `min_object_size` (int): Minimum area (in pixels) to keep an instance. Smaller regions are discarded as noise (default: `15`).
 
 ### Training Settings (`training`)
 
