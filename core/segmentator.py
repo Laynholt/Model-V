@@ -147,7 +147,6 @@ class CellSegmentator:
                     else int(test_number_of_images * self._dataset_setup.training.test_offset)
                 )
 
-                shuffle = self._dataset_setup.training.shuffle
             else:
                 # Same validation for split mode with full data directory
                 if (
@@ -192,8 +191,6 @@ class CellSegmentator:
                     else int(number_of_images * self._dataset_setup.training.test_offset)
                 ) + valid_offset + valid_size
 
-                shuffle = self._dataset_setup.training.shuffle
-
             # Train dataloader
             train_dataset = self.__get_dataset(
                 images_dir=os.path.join(train_dir, 'images'),
@@ -201,7 +198,7 @@ class CellSegmentator:
                 transforms=train_transforms,  # type: ignore
                 size=self._dataset_setup.training.train_size,
                 offset=train_offset,
-                shuffle=shuffle
+                shuffle=self._dataset_setup.training.shuffle
             )
             self._train_dataloader = DataLoader(train_dataset, batch_size=self._dataset_setup.training.batch_size, shuffle=True)
             logger.info(f"Loaded training dataset with {len(train_dataset)} samples.")
@@ -216,7 +213,7 @@ class CellSegmentator:
                     transforms=valid_transforms,
                     size=self._dataset_setup.training.valid_size,
                     offset=valid_offset,
-                    shuffle=shuffle
+                    shuffle=self._dataset_setup.training.shuffle
                 )
                 self._valid_dataloader = DataLoader(valid_dataset, batch_size=1, shuffle=False)
                 logger.info(f"Loaded validation dataset with {len(valid_dataset)} samples.")
@@ -231,7 +228,7 @@ class CellSegmentator:
                     transforms=test_transforms,
                     size=self._dataset_setup.training.test_size,
                     offset=test_offset,
-                    shuffle=shuffle
+                    shuffle=self._dataset_setup.training.shuffle
                 )
                 self._test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
                 logger.info(f"Loaded test dataset with {len(test_dataset)} samples.")
@@ -246,7 +243,7 @@ class CellSegmentator:
                     transforms=predict_transforms,
                     size=self._dataset_setup.training.test_size,
                     offset=test_offset,
-                    shuffle=shuffle
+                    shuffle=self._dataset_setup.training.shuffle
                 )
                 self._predict_dataloader = DataLoader(predict_dataset, batch_size=1, shuffle=False)
                 logger.info(f"Loaded prediction dataset with {len(predict_dataset)} samples.")
@@ -258,9 +255,9 @@ class CellSegmentator:
 
             number_of_images = len(os.listdir(test_images))
             test_offset = (
-                self._dataset_setup.training.test_offset
-                if isinstance(self._dataset_setup.training.test_offset, int)
-                else int(number_of_images * self._dataset_setup.training.test_offset)
+                self._dataset_setup.testing.test_offset
+                if isinstance(self._dataset_setup.testing.test_offset, int)
+                else int(number_of_images * self._dataset_setup.testing.test_offset)
             )
 
             if test_transforms is not None:
