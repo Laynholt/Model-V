@@ -141,9 +141,6 @@ def compute_segmentation_tp_fp_fn(
     ground_truth_mask = _ensure_ndim(ground_truth_mask, 3, insert_position=0)
     predicted_mask = _ensure_ndim(predicted_mask, 3, insert_position=0)
 
-    ground_truth_mask, _ = fastremap.renumber(ground_truth_mask)
-    predicted_mask, _ = fastremap.renumber(predicted_mask)
-
     num_channels = ground_truth_mask.shape[0]
     true_positive_list = []
     false_positive_list = []
@@ -568,8 +565,8 @@ def _process_instance_matching(
     If return_masks is True, binary error masks (TP, FP, FN) are also generated.
     
     Args:
-        ground_truth_mask: Ground truth instance mask.
-        predicted_mask: Predicted instance mask.
+        ground_truth_mask: Ground truth instance mask with shape (H, W).
+        predicted_mask: Predicted instance mask with shape (H, W).
         iou_threshold: IoU threshold for matching.
         return_masks: Whether to generate binary error masks.
         without_boundary_objects: Whether to remove objects touching the image boundary.
@@ -578,12 +575,15 @@ def _process_instance_matching(
         A dictionary with keys:
           - 'tp', 'fp', 'fn': integer counts.
           - If return_masks is True, also 'tp_mask', 'fp_mask', and 'fn_mask'.
-    """
+    """   
     # Optionally remove boundary objects.
     if without_boundary_objects:
         processed_ground_truth = _remove_boundary_objects(ground_truth_mask.astype(np.int32))
         processed_prediction = _remove_boundary_objects(predicted_mask.astype(np.int32))
     else:
+        ground_truth_mask, _ = fastremap.renumber(ground_truth_mask)
+        predicted_mask, _ = fastremap.renumber(predicted_mask)
+        
         processed_ground_truth = ground_truth_mask.astype(np.int32)
         processed_prediction = predicted_mask.astype(np.int32)
 
