@@ -192,6 +192,9 @@ A brief overview of the key parameters you can adjust in your JSON config:
 
 ## Examples
 
+**Example configuration files for training and testing are available in
+`config/templates/train/examples` and `config/templates/predict/examples`.**
+
 ### Generate a training config
 
 ```bash
