@@ -6,6 +6,8 @@
 
 Mediar-V is a multi-head extension of [MEDIAR-Former](https://github.com/Lee-Gihun/MEDIAR) for instance segmentation of overlapping cell structures in microscopy images (e.g., cytoplasm and nucleus of the same cell). Classical flow-field based methods typically support only a single object class and therefore require a separate model for each class. Mediar-V keeps a single backbone and flow representation, but adds dedicated segmentation heads for every target class and trains them jointly, which yields richer supervision and feature sharing between object types. On phase-contrast Glioma C6 and histological CytoNuke datasets with multiple cell classes, this unified architecture outperforms a set of separate single-class models by ≈3 p.p. F1 and ≈4 p.p. AP on average, while using a shared post-processing pipeline that reduces memory usage and FLOPs.
 
+<img src="./assets/architecture.png" width="1200"/>
+
 This repository provides two main scripts to configure and run a cell segmentation workflow:
 
 * **generate_config.py**: Interactive script to create JSON configuration files for training or prediction.
@@ -38,8 +40,8 @@ Follow the official guide at [https://docs.astral.sh/uv/](https://docs.astral.sh
 1. **Clone the repository**:
 
    ```bash
-   git clone https://git.ai.infran.ru/ilyukhin/model-v
-   cd model-v
+   git clone https://github.com/Laynholt/Model-V.git
+   cd Model-V
    ```
 2. **Install dependencies**:
 
