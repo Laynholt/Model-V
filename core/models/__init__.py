@@ -2,13 +2,13 @@ from torch import nn
 from typing import Final, Type, Any
 from pydantic import BaseModel
 
-from .model_v import ModelV, ModelVParams
+from .mediar_v import MediarV, MediarVParams
 
 
 __all__ = [
     "ModelRegistry",
-    "ModelV",
-    "ModelVParams"
+    "MediarV",
+    "MediarVParams"
 ]
 
 
@@ -17,9 +17,9 @@ class ModelRegistry:
     
     # Single dictionary storing both model classes and parameter classes.
     __MODELS: Final[dict[str, dict[str, Type[Any]]]] = {
-        "ModelV": {
-            "class": ModelV,
-            "params": ModelVParams,
+        "MediarV": {
+            "class": MediarV,
+            "params": MediarVParams,
         },
     }
     
