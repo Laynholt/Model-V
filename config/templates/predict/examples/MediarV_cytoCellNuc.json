@@ -1,0 +1,59 @@
+{
+    "model": {
+        "name": "MediarV",
+        "params": {
+            "encoder_name": "mit_b5",
+            "encoder_weights": "imagenet",
+            "decoder_channels": [
+                1024,
+                512,
+                256,
+                128,
+                64
+            ],
+            "decoder_pab_channels": 256,
+            "in_channels": 3,
+            "out_classes": 2,
+            "prefer_gn": true,
+            "upsample": 1,
+            "zero_init_heads": false
+        }
+    },
+    "dataset_config": {
+        "is_training": false,
+        "common": {
+            "seed": 0,
+            "device": "cuda:0",
+            "use_amp": true,
+            "roi_size": 1024,
+            "iou_threshold": 0.5,
+            "gradient_flow": {
+                "prob_threshold": 0.5,
+                "flow_threshold": 0.4,
+                "num_iters": 200,
+                "min_object_size": 15
+            },
+            "remove_boundary_objects": true,
+            "masks_subdir": "instance/multilabel",
+            "predictions_dir": "./outputs/train/multilabel/cytoCellNuc/without_boundary",
+            "pretrained_weights": "./wandb/run-20251016_055139-lfbvcnrg/files/cytoCellNuc.pth"
+        },
+        "testing": {
+            "test_dir": "/workspace/datasets/cyto_nuke",
+            "test_size": 0.21,
+            "test_offset": 0.79,
+            "shuffle": true
+        }
+    },
+    "wandb": {
+        "use_wandb": false,
+        "project": null,
+        "group": null,
+        "entity": null,
+        "name": null,
+        "id": null,
+        "tags": null,
+        "notes": null,
+        "save_code": true
+    }
+}

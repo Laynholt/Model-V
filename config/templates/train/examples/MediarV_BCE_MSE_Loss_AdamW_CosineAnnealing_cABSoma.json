@@ -1,0 +1,110 @@
+{
+    "model": {
+        "name": "MediarV",
+        "params": {
+            "encoder_name": "mit_b5",
+            "encoder_weights": "imagenet",
+            "decoder_channels": [
+                1024,
+                512,
+                256,
+                128,
+                64
+            ],
+            "decoder_pab_channels": 256,
+            "in_channels": 3,
+            "out_classes": 3,
+            "prefer_gn": true,
+            "upsample": 1,
+            "zero_init_heads": false
+        }
+    },
+    "dataset_config": {
+        "is_training": true,
+        "common": {
+            "seed": 0,
+            "device": "cuda:0",
+            "use_amp": true,
+            "roi_size": 1024,
+            "iou_threshold": 0.5,
+            "gradient_flow": {
+                "prob_threshold": 0.5,
+                "flow_threshold": 0.4,
+                "num_iters": 200,
+                "min_object_size": 15
+            },
+            "remove_boundary_objects": true,
+            "masks_subdir": "instance/multilabel/cABSoma",
+            "predictions_dir": "./outputs/train/multilabel/cABSoma",
+            "pretrained_weights": "/workspace/Mediar-V/weights/mediar_former/finetuned/from_phase1.pth"
+        },
+        "training": {
+            "is_split": true,
+            "pre_split": {
+                "train_dir": "/workspace/datasets/glioma_c6/dataset/spec/train",
+                "valid_dir": "/workspace/datasets/glioma_c6/dataset/spec/valid",
+                "test_dir": "/workspace/datasets/glioma_c6/dataset/spec/test"
+            },
+            "split": {
+                "all_data_dir": "."
+            },
+            "train_size": 1.0,
+            "valid_size": 1.0,
+            "test_size": 1.0,
+            "train_offset": 0,
+            "valid_offset": 0,
+            "test_offset": 0,
+            "shuffle": false,
+            "batch_size": 3,
+            "num_epochs": 250,
+            "val_freq": 1
+        }
+    },
+    "criterion": {
+        "name": "BCE_MSE_Loss",
+        "params": {
+            "num_classes": 3,
+            "bce_params": {
+                "with_logits": true,
+                "weight": null,
+                "reduction": "mean",
+                "pos_weight": null
+            },
+            "mse_params": {
+                "reduction": "mean"
+            }
+        }
+    },
+    "optimizer": {
+        "name": "AdamW",
+        "params": {
+            "lr": 5e-5,
+            "betas": [
+                0.9,
+                0.999
+            ],
+            "eps": 1e-8,
+            "weight_decay": 0.01,
+            "amsgrad": false
+        }
+    },
+    "scheduler": {
+        "name": "CosineAnnealing",
+        "params": {
+            "T_max": 25,
+            "eta_min": 1e-7,
+            "last_epoch": -1
+        }
+    },
+    "wandb": {
+        "use_wandb": true,
+        "project": "Train",
+        "group": "MediarV",
+        "entity": null,
+        "name": "gc6_instance_ml_cABSoma_ep250",
+        "id": null,
+        "tags": null,
+        "notes": null,
+        "save_code": true
+    }
+}
