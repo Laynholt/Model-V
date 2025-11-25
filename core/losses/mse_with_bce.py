@@ -68,34 +68,34 @@ class BCE_MSE_Loss(BaseLoss):
         self.loss_bce_metric = CumulativeAverage()
         self.loss_mse_metric = CumulativeAverage()
 
-    def forward(self, outputs: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self, outputs: dict[str, torch.Tensor], target: dict[str, torch.Tensor]) -> torch.Tensor: # type: ignore
         """
         Computes the loss between true labels and prediction outputs.
 
         Args:
-            outputs (torch.Tensor): Model predictions of shape (batch_size, channels, H, W).
-            target (torch.Tensor): Ground truth labels of shape (batch_size, channels, H, W).
+            outputs (dict[str, torch.Tensor]): Model predictions:
+                - "flow": (B, 2*C, H, W)  per-class flow (flow_vectors[0] is Y flow, flow_vectors[1] is X flow)
+                - "logits": (B, C, H, W)  per-class logits.
+            target (dict[str, torch.Tensor]): Ground truth labels:
+                - "flow": (B, 2*C, H, W)  per-class flow (flow_vectors[0] is Y flow, flow_vectors[1] is X flow)
+                - "labels": (B, C, H, W)  per-class labels.
 
         Returns:
             torch.Tensor: The total loss value.
         """
-        # Ensure target is on the same device as outputs
-        assert (
-            target.device == outputs.device
-        ), (
-            "Target tensor must be moved to the same device as outputs "
-            "before calling forward()."
-        )
-  
+        logits: torch.Tensor = outputs["logits"]                        # (B,C,H,W)
+        flow_pred: torch.Tensor = outputs["flow"]                       # (B,2*C,H,W)
+        labels: torch.Tensor = target["labels"]                         # (B,C,H,W)
+        flow_tgt: torch.Tensor = target["flow"]                         # (B,2*C,H,W)
+        
+        labels = labels.to(device=logits.device)
+        flow_tgt = flow_tgt.to(device=flow_pred.device)
+        
         # Cell Recognition Loss
-        cellprob_loss = self.bce_loss(
-            outputs[:, -self.num_classes:], (target[:, -self.num_classes:] > 0).float()
-        )
+        cellprob_loss = self.bce_loss(logits, (labels > 0).float())
 
         # Cell Distinction Loss
-        gradflow_loss = 0.5 * self.mse_loss(
-            outputs[:, :2 * self.num_classes], 5.0 * target[:, :2 * self.num_classes]
-        )
+        gradflow_loss = 0.5 * self.mse_loss(flow_pred, 5.0 * flow_tgt)
 
         # Total loss
         total_loss = cellprob_loss + gradflow_loss

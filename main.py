@@ -13,42 +13,57 @@ from core.data import (
 from core.segmentator import CellSegmentator
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Train or predict cell segmentator with specified config file."
-    )
-    parser.add_argument(
-        '-c', '--config',
-        type=str,
-        help='Path to the JSON config file'
-    )
-    parser.add_argument(
-        '-m', '--mode',
-        choices=['train', 'test', 'predict'],
-        default='train',
-        help='Run mode: train, test or predict'
-    )
-    parser.add_argument(
-        '--no-save-masks',
-        action='store_false',
-        dest='save_masks',
-        help='If set, do NOT save predicted masks (saving is enabled by default)'
-    )
-    parser.add_argument(
-        '--only-masks',
-        action='store_true',
-        help=('If set and save-masks set, save only the raw predicted'
-              ' masks without additional visualizations')
-    )
+def main(
+    manual: bool = False,
+    config_path: str | None = None,
+    mode: str | None = None,
+    save_masks: bool = True,
+    only_masks: bool = False
+) -> None:
+    
+    if not manual:
+        parser = argparse.ArgumentParser(
+            description="Train or predict cell segmentator with specified config file."
+        )
+        parser.add_argument(
+            '-c', '--config',
+            type=str,
+            help='Path to the JSON config file'
+        )
+        parser.add_argument(
+            '-m', '--mode',
+            choices=['train', 'test', 'predict'],
+            default='train',
+            help='Run mode: train, test or predict'
+        )
+        parser.add_argument(
+            '--no-save-masks',
+            action='store_false',
+            dest='save_masks',
+            help='If set, do NOT save predicted masks (saving is enabled by default)'
+        )
+        parser.add_argument(
+            '--only-masks',
+            action='store_true',
+            help=('If set and save-masks set, save only the raw predicted'
+                ' masks without additional visualizations')
+        )
 
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(0)
+        if len(sys.argv) == 1:
+            parser.print_help()
+            sys.exit(0)
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
-    mode = args.mode
-    config_path = args.config
+        mode = args.mode
+        config_path = args.config
+        save_masks = args.save_masks
+        only_masks = args.only_masks
+    
+    else:
+        if mode is None or config_path is None:
+            raise ValueError("In manual mode, you must specify the path to the config and mode!")
+        
     config = Config.load_json(config_path)
 
     if mode == 'train' and not config.dataset_config.is_training:
@@ -62,7 +77,7 @@ def main() -> None:
 
     if config.wandb_config.use_wandb:
         # Initialize W&B
-        wandb.init(config=config.asdict(), **config.wandb_config.asdict())
+        wandb.init(config=config.asdict(), reinit="finish_previous", **config.wandb_config.asdict())
         # How many batches to wait before logging training status
         wandb.config.log_interval = 10
 
@@ -84,9 +99,9 @@ def main() -> None:
         wandb.watch(segmentator._model, log="all", log_graph=True)
 
     try:
-        segmentator.run(save_results=args.save_masks, only_masks=args.only_masks)
-    except Exception:
-        raise
+        segmentator.run(save_results=save_masks, only_masks=only_masks)
+    except Exception as e:
+        raise e
     finally:
         if config.dataset_config.is_training:
             # Prepare saving path
@@ -101,8 +116,52 @@ def main() -> None:
 
             if config.wandb_config.use_wandb:
                 wandb.save(saving_path)
+                wandb.finish()
 
 
 
 if __name__ == "__main__":
-    main()
+    train_configs = [
+        "/workspace/model-v/config/templates/train/ModelV_BCE_MSE_Loss_AdamW_CosineAnnealing_cA.json",
+        "/workspace/model-v/config/templates/train/ModelV_BCE_MSE_Loss_AdamW_CosineAnnealing_cB.json",
+        "/workspace/model-v/config/templates/train/ModelV_BCE_MSE_Loss_AdamW_CosineAnnealing_cSoma.json",
+        "/workspace/model-v/config/templates/train/ModelV_BCE_MSE_Loss_AdamW_CosineAnnealing_cAB.json",
+        "/workspace/model-v/config/templates/train/ModelV_BCE_MSE_Loss_AdamW_CosineAnnealing_cABSoma.json",
+        
+        "/workspace/model-v/config/templates/train/ModelV_BCE_MSE_Loss_AdamW_CosineAnnealing_cytoCell.json",
+        "/workspace/model-v/config/templates/train/ModelV_BCE_MSE_Loss_AdamW_CosineAnnealing_cytoNuc.json",
+        "/workspace/model-v/config/templates/train/ModelV_BCE_MSE_Loss_AdamW_CosineAnnealing_cytoCellNuc.json",
+    ]
+    
+    predict_configs = [
+        "/workspace/model-v/config/templates/predict/ModelV_cA.json",
+        "/workspace/model-v/config/templates/predict/ModelV_cB.json",
+        "/workspace/model-v/config/templates/predict/ModelV_cSoma.json",
+        "/workspace/model-v/config/templates/predict/ModelV_cAB.json",
+        "/workspace/model-v/config/templates/predict/ModelV_cABSoma.json",
+        
+        "/workspace/model-v/config/templates/predict/ModelV_cytoCell.json",
+        "/workspace/model-v/config/templates/predict/ModelV_cytoNuc.json",
+        "/workspace/model-v/config/templates/predict/ModelV_cytoCellNuc.json",
+    ]
+        
+    for config in train_configs:
+        print(f"Hande config {config}")
+        main(
+            manual=True,
+            config_path=config,
+            mode="train",
+            save_masks=True,
+            only_masks=False
+        )
+        
+    for config in predict_configs:
+        print(f"Hande config {config}")
+        main(
+            manual=True,
+            config_path=config,
+            mode="predict",
+            save_masks=True,
+            only_masks=False
+        )
+    
