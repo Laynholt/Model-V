@@ -1,15 +1,18 @@
-# Cell Segmentator
+# Mediar-V
 
 ---
 
 ## Overview
 
+Mediar-V is a multi-head extension of [MEDIAR-Former](https://github.com/Lee-Gihun/MEDIAR) for instance segmentation of overlapping cell structures in microscopy images (e.g., cytoplasm and nucleus of the same cell). Classical flow-field based methods typically support only a single object class and therefore require a separate model for each class. Mediar-V keeps a single backbone and flow representation, but adds dedicated segmentation heads for every target class and trains them jointly, which yields richer supervision and feature sharing between object types. On phase-contrast Glioma C6 and histological CytoNuke datasets with multiple cell classes, this unified architecture outperforms a set of separate single-class models by ≈3 p.p. F1 and ≈4 p.p. AP on average, while using a shared post-processing pipeline that reduces memory usage and FLOPs.
+
 This repository provides two main scripts to configure and run a cell segmentation workflow:
 
-* **generate\_config.py**: Interactive script to create JSON configuration files for training or prediction.
+* **generate_config.py**: Interactive script to create JSON configuration files for training or prediction.
 * **main.py**: Entry point to train, test, or predict using the generated configuration.
 
 ---
+
 
 ## Installation
 
@@ -216,6 +219,20 @@ python main.py -c config/templates/predict/YourConfig.json -m predict
 ```
 
 > Unlike prediction testing, it is not necessary that the specified test directory contains a folder with true masks.
+
+### Run multiple configs from Python
+
+You are not limited to CLI arguments: if you have many configs, you can specify them directly in `main.py` (or another script) and call `main()` in manual mode:
+
+```python
+from main import main
+
+for cfg in [
+    "config/templates/train/YourConfigA.json",
+    "config/templates/train/YourConfigB.json",
+]:
+    main(manual=True, config_path=cfg, mode="train")
+```
 
 ---
 
