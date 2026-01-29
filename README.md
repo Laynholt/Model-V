@@ -71,6 +71,7 @@ If your dataset contains multiple classes, the recommended setup for multi-class
 
 Organizing masks into subdirectories is not meant to store “one class per folder” for multi-class segmentation. Instead, it is an optional way to keep alternative mask variants (e.g., different class sets, different numbers of classes, or different class groupings) without duplicating the images/ folder. In that case, each subdirectory contains complete masks (typically multi-channel) for the corresponding variant. The nesting depth under masks/ can be arbitrary (e.g., masks/exp1/variant_A_B/), as long as masks_subdir points to the chosen relative subpath.
 
+```
 path_to_data_folder/
 ├── images/                     # Input images (any supported format)
 │   └── img1.bmp
@@ -86,6 +87,7 @@ path_to_data_folder/
         └── variant_A_B_v2/     # Another variant (e.g., different labeling scheme)
             ├── img1_mask.png
             └── …
+```
 
 In this case, set the masks_subdir field in your dataset configuration to the desired relative path under masks/ (e.g., "exp1/variant_A_B" or "exp2/variant_A_B_v2").
 
