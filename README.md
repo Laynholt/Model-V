@@ -91,8 +91,8 @@ path_to_data_folder/
 
 In this case, set the masks_subdir field in your dataset configuration to the desired relative path under masks/ (e.g., "exp1/variant_A_B" or "exp2/variant_A_B_v2").
 
-•	**Supported file formats**: tif, tiff, png, jpg, bmp, jpeg.
-•	**Mask format**: Masks are expected in channel-last ordering, i.e., (H, W, C) after normalization.
+- **Supported file formats**: tif, tiff, png, jpg, bmp, jpeg.
+- **Mask format**: Masks are expected in channel-last ordering, i.e., (H, W, C) after normalization.
 ---
 
 ## generate\_config.py
