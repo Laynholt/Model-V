@@ -67,28 +67,30 @@ path_to_data_folder/
     └── …
 ```
 
-If your dataset contains multiple classes (e.g., class A and B) and you prefer not to duplicate images, you can organize masks into class-specific subdirectories:
+If your dataset contains multiple classes, the recommended setup for multi-class segmentation is to store one mask per image as a single array. Masks can be provided either as (H, W) (single-channel) or (H, W, C) (multi-channel, channel-last). Internally, masks are normalized to channel-last format, so (H, W) is automatically converted to (H, W, 1).
 
-```
+Organizing masks into subdirectories is not meant to store “one class per folder” for multi-class segmentation. Instead, it is an optional way to keep alternative mask variants (e.g., different class sets, different numbers of classes, or different class groupings) without duplicating the images/ folder. In that case, each subdirectory contains complete masks (typically multi-channel) for the corresponding variant. The nesting depth under masks/ can be arbitrary (e.g., masks/exp1/variant_A_B/), as long as masks_subdir points to the chosen relative subpath.
+
 path_to_data_folder/
-├── images/        # Input images (any supported format)
+├── images/                     # Input images (any supported format)
 │   └── img1.bmp
 └── masks/
-    ├── A/         # Masks for class A (any supported format)
-    │   ├── img1_mask.png
-    │   └── …
-    └── B/         # Masks for class B (any supported format)
-        ├── img1_mask.jpeg
-        └── …
-```
+    ├── exp1/
+    │   ├── variant_A_B/        # Variant: classes A and B encoded in a single mask per image
+    │   │   ├── img1_mask.png
+    │   │   └── …
+    │   └── variant_A_only/     # Variant: different class set / grouping (e.g., only class A)
+    │       ├── img1_mask.png
+    │       └── …
+    └── exp2/
+        └── variant_A_B_v2/     # Another variant (e.g., different labeling scheme)
+            ├── img1_mask.png
+            └── …
 
-In this case, set the `masks_subdir` field in your dataset configuration to the name of the mask subdirectory (e.g., `"A"` or `"B"`).
+In this case, set the masks_subdir field in your dataset configuration to the desired relative path under masks/ (e.g., "exp1/variant_A_B" or "exp2/variant_A_B_v2").
 
-**Supported file formats**: Image and mask files can have any of these extensions:
-`tif`, `tiff`, `png`, `jpg`, `bmp`, `jpeg`.
-
-**Mask format**: Instance masks should be provided for multi-label segmentation with channel-last ordering, i.e., each mask array must have shape `(H, W, C)`.
-
+•	**Supported file formats**: tif, tiff, png, jpg, bmp, jpeg.
+•	**Mask format**: Masks are expected in channel-last ordering, i.e., (H, W, C) after normalization.
 ---
 
 ## generate\_config.py
